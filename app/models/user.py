@@ -1,20 +1,30 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Literal
-
+from pydantic import BaseModel, EmailStr, Field, validator
+from typing import Optional
+import re
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20)
-    password: str = Field(..., min_length=8, max_length=128)
     email: EmailStr
-    role: Literal["admin","user"]
+    password: str = Field(..., min_length=8, max_length=64)
 
-class UserResponse(BaseModel):
-    id: str
-    username: str
-    email: EmailStr
-    message: str
+    @validator("password")
+    def validate_password(cls, value):
+        if not re.search(r"[A-Z]", value):
+            raise ValueError("Password must include at least one uppercase letter.")
+        if not re.search(r"[a-z]", value):
+            raise ValueError("Password must include at least one lowercase letter.")
+        if not re.search(r"\d", value):
+            raise ValueError("Password must include at least one number.")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            raise ValueError("Password must include at least one special character.")
+        return value
 
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3, max_length=20)
+    password: str = Field(..., min_length=8, max_length=64)
 
+class UserResponse(BaseModel):
+    message: str
+    id: Optional[str] = None
+    username: Optional[str] = None
+    email: Optional[str] = None
