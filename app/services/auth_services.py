@@ -41,10 +41,9 @@ async def login(user: UserLogin):
     db_user = await users.find_one({"username": user.username})
     hashed_pw= db_user.get("hashed_password")
 
-    if not db_user or not hashed_pw or not verify_password(user.password, hashed_pw):
-        raise HTTPException(status_code=403,detail="invalid username or password")
-    
-    
+    if not db_user:
+        raise HTTPException(status_code=403, detail="Invalid username or password")
+
     if not hashed_pw or not verify_password(user.password, hashed_pw):
         raise HTTPException(status_code=403, detail="Invalid username or password")
 
