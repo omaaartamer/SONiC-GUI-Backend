@@ -1,12 +1,13 @@
+
 from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional
 import re
 
 class UserCreate(BaseModel):
+    user_id: str
     username: str = Field(..., min_length=3, max_length=20)
+
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=64)
-
     @validator("password")
     def validate_password(cls, value):
         if not re.search(r"[A-Z]", value):
@@ -19,12 +20,11 @@ class UserCreate(BaseModel):
             raise ValueError("Password must include at least one special character.")
         return value
 
+
 class UserLogin(BaseModel):
     username: str = Field(..., min_length=3, max_length=20)
     password: str = Field(..., min_length=8, max_length=64)
 
-class UserResponse(BaseModel):
-    message: str
-    id: Optional[str] = None
-    username: Optional[str] = None
-    email: Optional[str] = None
+class UserLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
