@@ -3,9 +3,7 @@ from pydantic import BaseModel, EmailStr, Field, validator
 import re
 
 class UserCreate(BaseModel):
-    user_id: str
     username: str = Field(..., min_length=3, max_length=20)
-
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=64)
     @validator("password")

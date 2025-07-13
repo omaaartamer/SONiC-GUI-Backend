@@ -1,14 +1,58 @@
-import bcrypt
+import uuid
+from fastapi import HTTPException
+from app.models.user import UserCreate, UserLogin
+from app.db.mongo import db,users
+from app.core.security import hash_pasword, create_access_token, verify_password
 
 
-#hasing the password using bcrypt
-#salt is added to randomise and prevent the same password having the same hashing
 
-def hash_pasword(plain_password: str) -> str:
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(plain_password.encode('utf-8'),salt)
-    return hashed.decode('utf-8')
+async def signup(user: UserCreate):
+    # Check if user already exists
+    db_user = await users.find_one({"username": user.username})
+    email_exists = await users.find_one({"email": user.email.lower()})
+    if db_user:
+        raise HTTPException(status_code=401, detail="Username already exists")
+    elif  email_exists:
+        raise HTTPException(status_code=401, detail="email already exists")
 
-# Verify a password on login
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    # Insert new user into the database with hased password
+    hashed_pw = hash_pasword(user.password)
+    user_data = user.dict()
+    user_data["hashed_password"] = hashed_pw
+    del user_data["password"]
+
+    user_data["user_id"] = str(uuid.uuid4())
+    user_data["role"] = "user"
+
+    access_token = create_access_token(data={"sub": user.username})
+    
+
+    await users.insert_one(user_data)
+    print("Using DB:", db.name)
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
+
+
+async def login(user: UserLogin):
+    
+    # Check if user already exists
+    db_user = await users.find_one({"username": user.username})
+    hashed_pw= db_user.get("hashed_password")
+
+    if not db_user or not hashed_pw or not verify_password(user.password, hashed_pw):
+        raise HTTPException(status_code=403,detail="invalid username or password")
+    
+    
+    if not hashed_pw or not verify_password(user.password, hashed_pw):
+        raise HTTPException(status_code=403, detail="Invalid username or password")
+
+    access_token = create_access_token(data={"sub": db_user["username"]})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        # "username": db_user["username"],
+        # "user_id": db_user["user_id"],
+        # "role": db_user.get("role", "user") #if no role assigned, default to "user"
+    }
