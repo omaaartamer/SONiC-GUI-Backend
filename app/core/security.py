@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from datetime import timedelta,datetime,timezone
 from fastapi import status, Depends, HTTPException
 from app.db.mongo import db
-
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError

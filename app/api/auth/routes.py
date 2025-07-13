@@ -9,17 +9,14 @@ from app.services.otp_service import send_otp_email,generate_otp
 from datetime import datetime, timedelta
 from app.core.security import create_access_token, get_current_user
 
-
-
-
 router = APIRouter()
 
 @router.post("/signup", response_model=UserLoginResponse)
 @limiter.limit("5/minute")
 async def signup(request: Request,user: UserCreate):
     # Check if user already exists
-    db_user = await users.find_one({"username": user.username.lower()})
-    email_exists = await users.find_one({"email": user.email.lower()})
+    db_user = await db.users.find_one({"username": user.username})
+    email_exists = await db.users.find_one({"email": user.email.lower()})
     if db_user:
         raise HTTPException(status_code=401, detail="Username already exists")
     elif  email_exists:
@@ -48,7 +45,7 @@ async def signup(request: Request,user: UserCreate):
 async def login(request: Request,user: UserLogin):
     
     # Check if user already exists
-    db_user = await users.find_one({"username": user.username})
+    db_user = await db.users.find_one({"username": user.username})
     if not db_user:
         raise HTTPException(status_code=401,detail="User does not exist")
     

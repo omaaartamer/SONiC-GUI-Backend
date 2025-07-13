@@ -13,3 +13,4 @@ db = client[MONGO_DB] # type: ignore # Select the specific database you want
 users = db["users"] # Getting the users collection
 otps = db["otps"]
 
+
