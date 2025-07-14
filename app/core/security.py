@@ -1,12 +1,15 @@
 import os
+import bcrypt
 from dotenv import load_dotenv
 from datetime import timedelta,datetime,timezone
 from fastapi import status, Depends, HTTPException
-from app.db.mongo import db
+from app.db.mongo import users
 from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import  OAuth2PasswordBearer
 from jose import jwt, JWTError
 
+#hasing the password using bcrypt
+#salt is added to randomise and prevent the same password having the same hashing
 # This tells FastAPI where to get the token from
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -37,8 +40,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
-    user = await db.users.find_one({"username": username})
+    user = await users.find_one({"username": username})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
+def hash_pasword(plain_password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(plain_password.encode('utf-8'),salt)
+    return hashed.decode('utf-8')
+
+# Verify a password on login
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))

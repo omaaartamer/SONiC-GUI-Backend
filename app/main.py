@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.auth.routes import router as auth_router
+from app.routers.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
 from app.core.limiter import limiter
