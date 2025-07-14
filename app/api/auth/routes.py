@@ -35,7 +35,7 @@ async def signup(request: Request,user: UserCreate):
         "message": "User created successfully",
         "id": str(result.inserted_id),
         "username": user.username.lower(),
-        "email": user.email.lower,
+        "email": user.email.lower(),
         "role": "user"
     }
 
