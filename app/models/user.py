@@ -1,12 +1,11 @@
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
-from app.db.mongo import users
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20)
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=64)
-    @validator("password")
+    @field_validator("password")
     def validate_password(cls, value):
         if not re.search(r"[A-Z]", value):
             raise ValueError("Password must include at least one uppercase letter.")
@@ -24,5 +23,5 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=8, max_length=64)
 
 class UserLoginResponse(BaseModel):
-    access_token: str
     token_type: str = "bearer"
+    access_token: str

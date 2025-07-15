@@ -1,4 +1,3 @@
-import uuid
 from fastapi import HTTPException
 from app.models.user import UserCreate, UserLogin
 from app.db.mongo import db,users
@@ -17,12 +16,11 @@ async def signup(user: UserCreate):
 
     # Insert new user into the database with hased password
     hashed_pw = hash_pasword(user.password)
-    user_data = user.dict()
+    user_data = user.model_dump()
     user_data["hashed_password"] = hashed_pw
     del user_data["password"]
 
-    user_data["user_id"] = str(uuid.uuid4())
-    user_data["role"] = "user"
+    user_data["role"] = "admin"
 
     access_token = create_access_token(data={"sub": user.username})
     
@@ -39,7 +37,7 @@ async def login(user: UserLogin):
     
     # Check if user already exists
     db_user = await users.find_one({"username": user.username})
-    hashed_pw= db_user.get("hashed_password")
+    hashed_pw= db_user.get("hashed_password") if db_user else None
 
     if not db_user:
         raise HTTPException(status_code=403, detail="Invalid username or password")
