@@ -5,3 +5,6 @@ __pycache__/
 # Ignore virtual environments
 venv/
 .env
+
+key.pem
+cert.pem
