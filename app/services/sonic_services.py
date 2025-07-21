@@ -1,23 +1,26 @@
+from fastapi import HTTPException
 import httpx
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
+ 
 SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
 USERNAME = os.getenv("SONIC_USERNAME")
 PASSWORD = os.getenv("SONIC_PASSWORD")
 
+RESTCONF_HEADERS = {
+    "Accept": "application/yang-data+json"
+}
+
 async def fetch_vlans():
-    if not SONIC_BASE_URL:
-        raise Exception("SONIC_BASE_URL not set in .env")
-
-    async with httpx.AsyncClient(verify=False) as client:
-        response = await client.get(SONIC_BASE_URL, auth=(USERNAME, PASSWORD), headers={
-            "Accept": "application/yang-data+json"
-        })
-
-        if response.status_code == 200:
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
+            response = await client.get(
+                f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
+                headers=RESTCONF_HEADERS,
+            )
+            response.raise_for_status()
             return response.json()
-        else:
-            raise Exception(f"Failed to fetch VLANs: {response.status_code} - {response.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
