@@ -22,15 +22,9 @@ async def signup(user: UserCreate):
 
     user_data["role"] = "admin"
 
-    access_token = create_access_token(data={"sub": user.username})
-    
 
     await users.insert_one(user_data)
     print("Using DB:", db.name)
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
 
 
 async def login(user: UserLogin):
