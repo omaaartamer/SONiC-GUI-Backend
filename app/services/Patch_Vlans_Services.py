@@ -2,6 +2,7 @@ from fastapi import HTTPException
 import httpx, os 
 from dotenv import load_dotenv
 from email.utils import formatdate
+from app.models.Vlan import VlanWrapper 
 
 
 load_dotenv()
@@ -16,26 +17,21 @@ RESTCONF_HEADERS = {
 ETH_INTERFACES = {"Ethernet0", "Ethernet1", "Ethernet2", "Ethernet3" , "Ethernet4" , "Ethernet5" , "Ethernet6"}  # till get_ethernet_interfaces is made 
 
 
-async def update_vlans(vlan_data: dict):
+async def update_vlans(request:VlanWrapper):
     
-    validate_vlan_data(vlan_data)
+    validate_vlan_data(request)
     try:
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.patch(
                 f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
                 headers=RESTCONF_HEADERS,
-                json=vlan_data,
+                json=request.model_dump(by_alias=True)
             )
             response.raise_for_status()
-
-            
-            if response.text.strip():
-                return response.json()
-            
-            
+ 
             return {
-                "message": "VLAN configuration updated successfully.",
                 "status": response.status_code,
+                "message": "VLAN configuration updated successfully.",
                 "date": formatdate(timeval=None, usegmt=True)
             }
 
@@ -45,16 +41,15 @@ async def update_vlans(vlan_data: dict):
 
     
 
-def validate_vlan_data(vlan_data: dict):
+def validate_vlan_data(request:VlanWrapper):
     try:
-        vlan_config = vlan_data.get("sonic-vlan:sonic-vlan", {})
-        vlan_list = vlan_config.get("VLAN", {}).get("VLAN_LIST", [])
-        member_list = vlan_config.get("VLAN_MEMBER", {}).get("VLAN_MEMBER_LIST", [])
-
+        vlan_list = request.wrapper.vlan.VLAN_LIST
+        member_list = request.wrapper.members.VLAN_MEMBER_LIST
+        
         for vlan in vlan_list:
-            vlanid = vlan.get("vlanid")
-            name = vlan.get("name")
-            mac_learning = vlan.get("mac_learning")
+            vlanid = vlan.vlanid
+            name = vlan.name
+            mac_learning = vlan.mac_learning
 
             if mac_learning not in {"enabled", "disabled"}:
                 raise ValueError(f"Invalid mac_learning '{mac_learning}'. Must be 'enabled' or 'disabled'.")
@@ -68,11 +63,11 @@ def validate_vlan_data(vlan_data: dict):
                 raise ValueError(f"VLAN ID must be between 1 and 4094 (got {vlanid})")
 
         for member in member_list:
-            ifname = member.get("ifname")
+            ifname = member.ifname
             if ifname not in ETH_INTERFACES:
                 raise ValueError(f"Invalid interface name '{ifname}'. Allowed: {', '.join(ETH_INTERFACES)}")
 
-            if member.get("tagging_mode") not in {"tagged", "untagged"}:
+            if member.tagging_mode not in {"tagged", "untagged"}:
                 raise ValueError(f"Invalid tagging_mode '{member.get('tagging_mode')}'. Must be 'tagged' or 'untagged'.")
 
     except ValueError as ve:

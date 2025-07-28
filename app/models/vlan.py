@@ -31,7 +31,7 @@ class Vlan_Post_Request(BaseModel):
         return values
 
 
-class Vlan_Put_Request(BaseModel):  # This is the nested content inside "sonic-vlan:sonic-vlan"
+class Vlan_Update_Request(BaseModel):  # This is the nested content inside "sonic-vlan:sonic-vlan"
     vlan: SonicVLAN = Field(..., alias="VLAN")
     members: Optional[SonicVLANMember] = Field(None, alias="VLAN_MEMBER")
 
@@ -41,5 +41,5 @@ class Vlan_Put_Request(BaseModel):  # This is the nested content inside "sonic-v
         if not vlan_data or not vlan_data.get("VLAN_LIST"):
             raise ValueError("VLAN with VLAN_LIST is required")
         return values
-class Put_VlanWrapper(BaseModel):
-    request: Vlan_Put_Request = Field(..., alias="sonic-vlan:sonic-vlan")
+class VlanWrapper(BaseModel):
+    wrapper: Vlan_Update_Request = Field(..., alias="sonic-vlan:sonic-vlan")

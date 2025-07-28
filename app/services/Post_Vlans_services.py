@@ -1,3 +1,4 @@
+from email.utils import formatdate
 import re, os, httpx
 from fastapi import HTTPException
 from dotenv import load_dotenv
@@ -29,6 +30,7 @@ async def add_vlans(request:Vlan_Post_Request):
 
     vlan_List= request.vlan.VLAN_LIST
     member_List= request.members.VLAN_MEMBER_LIST
+
     for i in vlan_List:
         if not is_valid_vlan_name(i.name):
             raise HTTPException(status_code=400, detail= "VLAN name format: 'Vlanxxx'")
@@ -48,7 +50,8 @@ async def add_vlans(request:Vlan_Post_Request):
             response.raise_for_status()
             return {
                 "status": response.status_code,
-                "message": "VLAN added successfully"
+                "message": "VLAN added successfully",
+                "date": formatdate(timeval=None, usegmt=True)
             }
 
         
