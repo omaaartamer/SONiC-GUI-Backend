@@ -1,9 +1,6 @@
-import re, os
-
-import httpx
-from app.models.vlan import Vlan_request
+import re, os, httpx
+from app.models.Vlan import Vlan_request
 from fastapi import HTTPException
-from typing import List
 from dotenv import load_dotenv
 
 RESTCONF_HEADERS = {
