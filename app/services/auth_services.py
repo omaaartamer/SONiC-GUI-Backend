@@ -1,7 +1,7 @@
 from fastapi import HTTPException
-from app.models.user import UserCreate, UserLogin
+from app.models.User import UserCreate, UserLogin
 from app.db.mongo import db,users
-from app.core.security import hash_pasword, create_access_token, verify_password
+from app.core.Security import hash_pasword, create_access_token, verify_password
 
 
 

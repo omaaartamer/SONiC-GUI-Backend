@@ -17,4 +17,4 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(vlans_router, prefix="/vlans",tags=["Vlans"])
-app.include_router(port_op_router, prefix="/portOp",tags=["Port Operation"])
+app.include_router(port_op_router, prefix="/portOp",tags=["Port Operations"])

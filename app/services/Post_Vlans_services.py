@@ -1,7 +1,7 @@
 import re, os, httpx
-from app.models.Vlan import Vlan_request
 from fastapi import HTTPException
 from dotenv import load_dotenv
+from app.models.Vlan import Vlan_Post_Request
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json",
@@ -24,7 +24,7 @@ def extractNumbers_VlanName(name:str):
         return int(id.group(1))
     return None
     
-async def add_vlans(request:Vlan_request):
+async def add_vlans(request:Vlan_Post_Request):
 
 
     vlan_List= request.vlan.VLAN_LIST

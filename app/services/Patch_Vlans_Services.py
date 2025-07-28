@@ -1,9 +1,7 @@
 from fastapi import HTTPException
-import httpx
-import os
+import httpx, os 
 from dotenv import load_dotenv
 from email.utils import formatdate
-from datetime import datetime, timezone
 
 
 load_dotenv()

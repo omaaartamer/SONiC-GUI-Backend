@@ -1,5 +1,5 @@
 from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 class Vlan(BaseModel):
     name: str
@@ -19,7 +19,7 @@ class SonicVLANMember(BaseModel):
     VLAN_MEMBER_LIST: Optional[List[Vlan_memberList]]=None
 
 
-class Vlan_request(BaseModel):
+class Vlan_Post_Request(BaseModel):
     vlan: SonicVLAN = Field(..., alias="sonic-vlan:VLAN")
     members: Optional[SonicVLANMember] = Field(None, alias="sonic-vlan:VLAN_MEMBER")
 
@@ -27,5 +27,19 @@ class Vlan_request(BaseModel):
     def check_vlans_members(cls, values):
         vlan_data = values.get("sonic-vlan:VLAN")
         if not vlan_data or not vlan_data.get("VLAN_LIST"):
-            raise ValueError("sonic-vlan:VLAN wiht VLAN_LIST is required")
+            raise ValueError("sonic-vlan:VLAN with VLAN_LIST is required")
         return values
+
+
+class Vlan_Put_Request(BaseModel):  # This is the nested content inside "sonic-vlan:sonic-vlan"
+    vlan: SonicVLAN = Field(..., alias="VLAN")
+    members: Optional[SonicVLANMember] = Field(None, alias="VLAN_MEMBER")
+
+    @model_validator(mode="before")
+    def check_vlans_members(cls, values):
+        vlan_data = values.get("VLAN")
+        if not vlan_data or not vlan_data.get("VLAN_LIST"):
+            raise ValueError("VLAN with VLAN_LIST is required")
+        return values
+class Put_VlanWrapper(BaseModel):
+    request: Vlan_Put_Request = Field(..., alias="sonic-vlan:sonic-vlan")

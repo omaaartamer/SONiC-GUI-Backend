@@ -10,6 +10,6 @@ load_dotenv()
 SONIC_SWITCH_IP=os.getenv("SONIC_SWITCH_IP")
 
 
-@router.get("/po")
+@router.get("/")
 async def get_port_oper():
     return await get_po_service()
