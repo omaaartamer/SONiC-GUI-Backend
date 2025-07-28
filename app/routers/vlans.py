@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from app.services.DeleteServices import delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name
-from app.services.Get_Vlans_services import fetch_vlans
+from app.services.Delete_Vlans_Services import delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name
+from app.services.Get_Vlans_Services import fetch_vlans
 from app.models.vlan import Vlan_request
-from app.services.Put_Vlans_services import update_put_vlan
-from app.services.Post_Vlans_services import add_vlans
+from app.services.Put_Vlans_Services import update_put_vlan
+from app.services.Post_Vlans_Services import add_vlans
 router = APIRouter()
 
 
