@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from app.routers.auth import router as auth_router
-from app.routers.vlans import router as vlans_router
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers.Auth_Router import router as auth_router
+from app.routers.Vlans_Router import router as vlans_router
+from app.routers.Port_Oper_Router import router as port_op_router
 
 app=FastAPI()
 
@@ -14,5 +15,6 @@ app.add_middleware(
 )
 
 
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(vlans_router, prefix="/vlans",tags=["vlans"])
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(vlans_router, prefix="/vlans",tags=["Vlans"])
+app.include_router(port_op_router, prefix="/portOp",tags=["Port Operation"])
