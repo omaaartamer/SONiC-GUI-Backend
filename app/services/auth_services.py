@@ -39,7 +39,7 @@ async def login(user: UserLogin):
     if not hashed_pw or not verify_password(user.password, hashed_pw):
         raise HTTPException(status_code=403, detail="Invalid username or password")
 
-    access_token = create_access_token(data={"sub": db_user["username"]})
+    access_token = create_access_token(data={"sub": db_user["username"], "role":db_user["role"]})
     return {
         "access_token": access_token,
         "token_type": "bearer",
