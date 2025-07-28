@@ -10,7 +10,7 @@ RESTCONF_HEADERS = {
     "Content-Type": "application/yang-data+json"
 }
 
-async def put_vlan(vlan_payload: dict):
+async def update_put_vlan(vlan_payload: dict):
     if not SONIC_BASE_URL:
         raise Exception("SONIC_BASE_URL not set in .env")
 

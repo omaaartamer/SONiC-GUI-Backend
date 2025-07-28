@@ -58,7 +58,5 @@ async def add_vlans(request:Vlan_request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # if request.vlan.VLAN_LIST[0].name[0].islower():
-
 
         
