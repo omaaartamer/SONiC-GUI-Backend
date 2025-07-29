@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper 
-from app.services.Vlans_Services import fetch_vlans, post_vlans_service, put_vlan_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name
+from app.services.Vlans_Services import fetch_vlans, post_vlans_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name, put_vlan_service
 
 router = APIRouter()
 
@@ -15,9 +15,12 @@ async def add(request:Vlan_Post_Request):
 
 
 
+from fastapi import Request
+
 @router.put("/put_vlans")
-async def put_vlan(request:VlanWrapper):
+async def put_vlan(request:dict):
     return await put_vlan_service(request)
+
  
 
 
