@@ -15,3 +15,5 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 ## Current Features
 
 - User authentication
+- Vlan CRUD Operations
+- Port Operational Status Retrieval
