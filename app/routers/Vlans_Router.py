@@ -1,11 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper 
-from app.services.Delete_Vlans_Services import delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name
-from app.services.Get_Vlans_Services import fetch_vlans
-from app.services.Patch_Vlans_Services import update_vlans
-from app.services.Put_Vlans_Services import update_put_vlan
-from app.services.Post_Vlans_Services import add_vlans
-
+from app.services.Vlans_Services import fetch_vlans, post_vlans_service, put_vlan_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name
 
 router = APIRouter()
 
@@ -16,19 +11,19 @@ async def get_vlans():
 
 @router.post("/add_vlans")
 async def add(request:Vlan_Post_Request):
-    return await add_vlans(request) 
+    return await post_vlans_service(request) 
 
 
 
 @router.put("/put_vlans")
 async def put_vlan(request:VlanWrapper):
-    return await update_put_vlan(request)
+    return await put_vlan_service(request)
  
 
 
 @router.patch("/patch_vlans")
 async def patch_vlans(request:VlanWrapper): 
-    return await update_vlans(request)
+    return await patch_vlans_service(request)
 
 
 @router.delete("/delete/all", summary="Delete ALL VLAN config (VLANs + Members)")
