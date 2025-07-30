@@ -1,21 +1,21 @@
 from fastapi import HTTPException
 from app.models.User import UserCreate, UserLogin
 from app.db.mongo import db,users
-from app.core.Security import hash_pasword, create_access_token, verify_password
+from app.core.Security import hash_password, create_access_token, verify_password
 
 
 
 async def signup(user: UserCreate):
     # Check if user already exists
-    db_user = await users.find_one({"username": user.username})
+    db_user = await users.find_one({"username": user.username.lower()})
     email_exists = await users.find_one({"email": user.email.lower()})
     if db_user:
-        raise HTTPException(status_code=401, detail="Username already exists")
+        raise HTTPException(status_code=409, detail="Username already exists")
     elif  email_exists:
-        raise HTTPException(status_code=401, detail="email already exists")
+        raise HTTPException(status_code=409, detail="email already exists")
 
     # Insert new user into the database with hased password
-    hashed_pw = hash_pasword(user.password)
+    hashed_pw = hash_password(user.password)
     user_data = user.model_dump()
     user_data["hashed_password"] = hashed_pw
     del user_data["password"]

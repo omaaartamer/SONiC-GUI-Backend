@@ -21,7 +21,7 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def hash_pasword(password: str) -> str:
+def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 # Verify a password on login

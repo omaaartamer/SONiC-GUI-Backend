@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException
 from dotenv import load_dotenv
 import httpx, os
 
@@ -8,7 +8,7 @@ RESTCONF_HEADERS = {
 
 
 load_dotenv()
-SONIC_SWITCH_IP=os.getenv("SONIC_SWITCH_IP")
+
 SONIC_BASE_URL=os.getenv("SONIC_BASE_URL")
 
 

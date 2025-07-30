@@ -3,14 +3,13 @@ from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember
-from app.models.Vlan import VlanWrapper
+
 
 
 load_dotenv()
  
 SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
-USERNAME = os.getenv("SONIC_USERNAME")
-PASSWORD = os.getenv("SONIC_PASSWORD")
+
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json",
