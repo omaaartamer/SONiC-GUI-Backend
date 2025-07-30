@@ -17,7 +17,14 @@ RESTCONF_HEADERS = {
     "Content-Type": "application/yang-data+json"
 }
 
-ETH_INTERFACES = {"Ethernet0", "Ethernet1", "Ethernet2", "Ethernet3" , "Ethernet4" , "Ethernet5" , "Ethernet6"}  # till get_ethernet_interfaces is made 
+ETH_INTERFACES = {
+    "Ethernet0", "Ethernet4", "Ethernet8", "Ethernet12", "Ethernet16", "Ethernet20",
+    "Ethernet24", "Ethernet28", "Ethernet32", "Ethernet36", "Ethernet40", "Ethernet44",
+    "Ethernet48", "Ethernet52", "Ethernet56", "Ethernet60", "Ethernet64", "Ethernet68",
+    "Ethernet72", "Ethernet76", "Ethernet80", "Ethernet84", "Ethernet88", "Ethernet92",
+    "Ethernet96", "Ethernet100", "Ethernet104", "Ethernet108", "Ethernet112", "Ethernet116",
+    "Ethernet120", "Ethernet124"
+}
 
 
 def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
