@@ -104,15 +104,19 @@ async def post_vlans_service(request:Vlan_Post_Request):
     
 
 
-async def put_vlan_service(payload: dict):
-    url = f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan"
+async def put_vlan_service(request:VlanWrapper):
+    
+    vlan_List= request.wrapper.vlan.VLAN_LIST
+    member_List= request.wrapper.members.VLAN_MEMBER_LIST
+    validate_vlan_data(vlan_List, member_List)
+
     try:
 
         async with httpx.AsyncClient(verify=False, timeout = 10.0) as client:
             response = await client.put(
-                url,
+                f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
                 headers=RESTCONF_HEADERS,
-                json=payload  # ← raw body passed directly)
+                json=request.model_dump(by_alias=True)
             )
 
             response.raise_for_status()
@@ -123,7 +127,6 @@ async def put_vlan_service(payload: dict):
             }
     except Exception as e: 
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 async def patch_vlans_service(request:VlanWrapper):
