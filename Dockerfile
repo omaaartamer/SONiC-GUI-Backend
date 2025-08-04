@@ -10,8 +10,7 @@ COPY . .
 
 EXPOSE 8000
 
-ENV MONGO_DB=yourdbname
-ENV MONGO_URI=mongodb://your-host:your-port
+
 
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
