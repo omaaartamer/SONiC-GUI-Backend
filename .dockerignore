@@ -1,0 +1,65 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# VS Code
+.vscode/
+
+# IDEs
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+coverage.xml
+.cache
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Docker
+*.bak
+*.tmp
+*.pid
+*.sock
+
+# Environment files
+.env
+.env.*
+
+# Local Mongo data (if used)
+data/
+dump/
+
+# Ignore compiled files and dist
+build/
+dist/
+*.egg-info/
+
+# Ignore requirements lock if generated
+poetry.lock
+Pipfile.lock
+
+# Ignore lint reports if generated
+.flake8
+.mypy_cache/
