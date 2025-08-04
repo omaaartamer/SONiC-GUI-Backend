@@ -8,3 +8,12 @@ env/
 .env
 .git
 .gitignore
+__pycache__/
+*.pyc
+*.pyo
+
+venv/
+
+.env
+.git
+.gitignore
