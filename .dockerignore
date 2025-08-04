@@ -1,19 +1,13 @@
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
-env/
-.venv/
-*.db
-.env
-.git
-.gitignore
-__pycache__/
-*.pyc
-*.pyo
 
 venv/
 
 .env
 .git
 .gitignore
+
+
+
+
