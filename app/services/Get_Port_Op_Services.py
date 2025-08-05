@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from dotenv import load_dotenv
-import httpx, os
+import httpx
+import os
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json"
