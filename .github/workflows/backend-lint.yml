@@ -1,0 +1,36 @@
+name: Lint Python Backend
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint FastAPI Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+
+      - name: Lint with flake8
+        run: |
+          flake8 app/ --max-line-length=120 --exclude=__pycache__
+
+      - name: Check formatting with black (non-blocking)
+        run: |
+          black --check app/
