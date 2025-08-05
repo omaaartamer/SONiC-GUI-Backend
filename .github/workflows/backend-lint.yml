@@ -1,36 +1,47 @@
-name: Lint Python Backend
-
-on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-
+name: Ruff
+on: push
 jobs:
-  lint:
-    name: Lint FastAPI Code
-    runs-on: ubuntu-latest
+   ruff:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - name: Install Ruff
+          run: pip install ruff
+        - name: Run Ruff
+          run: ruff check .
+# name: Lint Python Backend
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+# on:
+#   pull_request:
+#     branches:
+#       - main
+#   push:
+#     branches:
+#       - main
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+# jobs:
+#   lint:
+#     name: Lint FastAPI Code
+#     runs-on: ubuntu-latest
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Lint with flake8
-        run: |
-          flake8 app/ --max-line-length=120 --exclude=__pycache__
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: 3.11
 
-      - name: Check formatting with black (non-blocking)
-        run: |
-          black --check app/
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install flake8 black
+
+#       - name: Lint with flake8
+#         run: |
+#           flake8 app/ --max-line-length=120 --exclude=__pycache__
+
+#       - name: Check formatting with black (non-blocking)
+#         run: |
+#           black --check app/
