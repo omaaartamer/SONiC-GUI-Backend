@@ -15,10 +15,10 @@ class MySSHSession(asyncssh.SSHClientSession):
     def __init__(self):
         self.output_queue = asyncio.Queue()
 
-    def data_received(self, data, datatype):
+    def data_received(self, data):
         self.output_queue.put_nowait(data)
 
-    def connection_lost(self, exc):
+    def connection_lost(self):
         self.output_queue.put_nowait("** Connection closed **")
 
 

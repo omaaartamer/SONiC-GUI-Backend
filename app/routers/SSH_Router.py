@@ -1,5 +1,3 @@
-# routers/SSH_Router.py
-
 from fastapi import APIRouter, WebSocket
 from app.services.SSH_Services import handle_ssh_session
 
@@ -9,4 +7,3 @@ router = APIRouter()
 async def ssh_websocket(websocket: WebSocket):
     await websocket.accept()
     await handle_ssh_session(websocket)
-#test comment change for git actions/linting 
