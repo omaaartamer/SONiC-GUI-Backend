@@ -10,7 +10,7 @@
 #         - name: Run Ruff
 #           run: ruff check .
 
-name: Lint Python Backend
+name: Lint and Build Docker
 
 on: push
 
@@ -38,6 +38,8 @@ jobs:
           
       - name: Lint with flake8
         run: flake8 . --max-line-length=120
-     
+
+      - name: Build Docker Image
+        run: docker build -t my-fastapi-app
         
 
