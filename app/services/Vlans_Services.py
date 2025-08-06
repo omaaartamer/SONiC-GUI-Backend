@@ -1,4 +1,6 @@
-import re, os, httpx
+import re
+import os
+import httpx
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
@@ -50,14 +52,14 @@ def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
                 member_vlan_name=member.name
 
                 if re.fullmatch(r'Vlan\d+', member_vlan_name) is None:
-                    raise ValueError(f"VLAN name must match 'Vlan<id>' pattern")
+                    raise ValueError("VLAN name must match 'Vlan<id>' pattern")
                 
                 ifname = member.ifname
                 if ifname not in ETH_INTERFACES:
                     raise ValueError(f"Invalid interface name '{ifname}'. Allowed: {', '.join(ETH_INTERFACES)}")
 
                 if member.tagging_mode not in {"tagged", "untagged"}:
-                    raise ValueError(f"Invalid tagging_mode. Must be 'tagged' or 'untagged'.")
+                    raise ValueError("Invalid tagging_mode, Must be 'tagged' or 'untagged'.")
 
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

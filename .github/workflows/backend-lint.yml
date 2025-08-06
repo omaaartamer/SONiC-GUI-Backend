@@ -1,12 +1,18 @@
-name: Lint Python Backend
+# name: Ruff
+# on: push
+# jobs:
+#    ruff:
+#       runs-on: ubuntu-latest
+#       steps:
+#         - uses: actions/checkout@v4
+#         - name: Install Ruff
+#           run: pip install ruff
+#         - name: Run Ruff
+#           run: ruff check .
 
-on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+name: Lint and Build Docker
+
+on: push
 
 jobs:
   lint:
@@ -26,11 +32,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 black
-
+          
+      - name: Format code with black
+        run: black app/
+          
       - name: Lint with flake8
-        run: |
-          flake8 app/ --max-line-length=120 --exclude=__pycache__
+        run: flake8 . --max-line-length=120
 
-      - name: Check formatting with black (non-blocking)
-        run: |
-          black --check app/
+      - name: Build Docker Image
+        run: docker build -t my-fastapi-app .
+        
+

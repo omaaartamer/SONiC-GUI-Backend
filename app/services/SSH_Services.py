@@ -1,8 +1,6 @@
-# services/SSH_Services.py
-
 import asyncssh
 import asyncio
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
 import os
 
@@ -24,7 +22,7 @@ class MySSHSession(asyncssh.SSHClientSession):
         self.output_queue.put_nowait("** Connection closed **")
 
 
-from fastapi import WebSocket, WebSocketDisconnect
+
 
 async def handle_ssh_session(websocket: WebSocket):
     try:
@@ -86,6 +84,6 @@ async def handle_ssh_session(websocket: WebSocket):
     except Exception as e:
         try:
             await websocket.send_text(f"Connection failed: {str(e)}")
-        except:
+        except Exception:
             pass
         await websocket.close()
