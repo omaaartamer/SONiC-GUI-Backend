@@ -17,3 +17,39 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - User authentication
 - Vlan CRUD Operations
 - Port Operational Status Retrieval
+
+## Getting Started
+
+### Prerequisites
+- **Python 3.11+**
+- **Docker**
+
+### Installation
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/alaaashraf19/SONiC-GUI-Backend.git
+   cd SONiC-GUI-Backend
+
+2. **Setup Virtual Enviroment**
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate #For Windows
+   source venv/bin/activate  # Linux/Mac
+   
+3. **Enviroment Variables**
+   ```bash
+   cp .env.example .env
+   ```
+- Update the .env file with your values
+   
+   
+5. **Install Dependencies**
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+
+6. **Run the Application**
+   ```bash
+   uvicorn app.main:app --reload
+
