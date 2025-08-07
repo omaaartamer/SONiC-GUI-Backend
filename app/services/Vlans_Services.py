@@ -34,8 +34,9 @@ async def get_Ethernet_List():
 
 
 async def check_untagged_if(eth:str):
-
     json_Vlan_data = await fetch_vlans()
+    if not json_Vlan_data: # if not vlans exist so response will be empty
+        return
     response = Vlan_Get_Response(**json_Vlan_data)
     members_list = response.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
     if members_list is not None:
@@ -44,6 +45,17 @@ async def check_untagged_if(eth:str):
                 return True
     return False
 
+
+async def check_Vlan_exist(vlan:str):
+    json_Vlan_data = await fetch_vlans()
+    if not json_Vlan_data: # if not vlans exist so response will be empty
+        return
+    response = Vlan_Get_Response(**json_Vlan_data)
+    vlan_names = response.wrapper.VLAN.VLAN_LIST
+    for name in vlan_names:
+        if name == vlan:
+            return True
+    return False
 
 
 async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
@@ -86,6 +98,7 @@ async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
                     is_untagged = await check_untagged_if(ifname)
                     if is_untagged:
                         raise ValueError(f"Interface '{ifname}' is already configured as untagged in another VLAN. Choose another interface or change the tagging mode.")
+    
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     
@@ -100,16 +113,20 @@ async def fetch_vlans():
 
             response.raise_for_status()
             return response.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
+    
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 async def post_vlans_service(request:Vlan_Post_Request):
 
-
     vlan_List= request.vlan.VLAN_LIST
     member_List= request.members.VLAN_MEMBER_LIST
     await validate_vlan_data(vlan_List, member_List)
+
     try:
         
         async with httpx.AsyncClient(verify=False, timeout = 10.0) as client:
@@ -182,6 +199,10 @@ async def patch_vlans_service(request:VlanWrapper):
 
 
 async def delete_all_vlans_from_switch():
+
+    vlans = await fetch_vlans()
+    if not vlans:
+        raise HTTPException(status_code=404, detail="No VLANs found in the switch")
     try:
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.delete(f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan", headers=RESTCONF_HEADERS, timeout=10.0)
@@ -198,12 +219,18 @@ async def delete_all_vlans_from_switch():
     
 async def delete_vlan_by_name(vlan_name: str):
     vlan_url = f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan/VLAN/VLAN_LIST={vlan_name}"
+    
+    exist = await check_Vlan_exist(vlan_name)
+    if not exist:
+        raise HTTPException(status_code=404, detail="Vlan name not found")
+    
     try:
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.delete(vlan_url, headers=RESTCONF_HEADERS,  timeout=10.0)
 
             response.raise_for_status()
             return {"detail": f"VLAN '{vlan_name}' successfully deleted from the switch."}
+        
     except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -213,13 +240,20 @@ async def delete_vlan_by_name(vlan_name: str):
 
 
 async def delete_vlan_description_by_name(vlan_name: str):
+
     url = f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan/VLAN/VLAN_LIST={vlan_name}/description"
-    try:
+    
+    exist = await check_Vlan_exist(vlan_name)
+    if not exist:
+        raise HTTPException(status_code=404, detail="Vlan name not found")
+    
+    try:    
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.delete(url, headers=RESTCONF_HEADERS,  timeout=10.0)
 
             response.raise_for_status()
             return {"detail": f"VLAN '{vlan_name}' Description successfully deleted from the switch."}
+
     except Exception as e:
             raise HTTPException(
                 status_code=500,

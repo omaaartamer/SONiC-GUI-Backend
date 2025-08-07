@@ -49,4 +49,4 @@ class Vlan_List(BaseModel):
     VLAN_MEMBER: Optional[SonicVLANMember]
 
 class Vlan_Get_Response(BaseModel):
-    wrapper: Vlan_List = Field(..., alias= "sonic-vlan:sonic-vlan")
+    wrapper: Vlan_List = Field(None, alias= "sonic-vlan:sonic-vlan")
