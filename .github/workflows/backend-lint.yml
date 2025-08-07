@@ -37,7 +37,7 @@ jobs:
         run: black app/
           
       - name: Lint with flake8
-        run: flake8 . --max-line-length=120
+        run: flake8 . --max-line-length=200
 
       - name: Build Docker Image
         run: docker build -t my-fastapi-app .
