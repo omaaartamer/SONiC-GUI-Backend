@@ -36,7 +36,7 @@ async def get_Ethernet_List():
 async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
     
     ETH_INTERFACES= await get_Ethernet_List()
-
+    print(ETH_INTERFACES)
     try:
     
         for vlan in vlan_list:
@@ -92,7 +92,7 @@ async def post_vlans_service(request:Vlan_Post_Request):
 
     vlan_List= request.vlan.VLAN_LIST
     member_List= request.members.VLAN_MEMBER_LIST
-    validate_vlan_data(vlan_List, member_List)
+    await validate_vlan_data(vlan_List, member_List)
     try:
         
         async with httpx.AsyncClient(verify=False, timeout = 10.0) as client:
@@ -117,7 +117,7 @@ async def put_vlan_service(request:VlanWrapper):
     
     vlan_List= request.wrapper.vlan.VLAN_LIST
     member_List= request.wrapper.members.VLAN_MEMBER_LIST
-    validate_vlan_data(vlan_List, member_List)
+    await validate_vlan_data(vlan_List, member_List)
 
     try:
 
@@ -142,7 +142,7 @@ async def patch_vlans_service(request:VlanWrapper):
     
     vlan_List= request.wrapper.vlan.VLAN_LIST
     member_List= request.wrapper.members.VLAN_MEMBER_LIST
-    validate_vlan_data(vlan_List, member_List)
+    await validate_vlan_data(vlan_List, member_List)
 
     try:
 
