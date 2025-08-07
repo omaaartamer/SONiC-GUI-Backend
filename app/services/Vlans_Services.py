@@ -48,7 +48,7 @@ async def check_untagged_if(eth:str):
 
 async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
     
-    ETH_INTERFACES= await get_Ethernet_List()
+    ETH_INTERFACES = await get_Ethernet_List()
     # print(ETH_INTERFACES)
     try:
     
