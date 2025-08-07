@@ -4,7 +4,7 @@ import httpx
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
-from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember
+from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember, Vlan_Get_Response
 from app.services.Port_Op_Services import get_po_service
 from app.models.Port import Port_Oper_Response
 
@@ -21,10 +21,10 @@ RESTCONF_HEADERS = {
 
 
 async def get_Ethernet_List():
-    json_data= await get_po_service()
-    response= Port_Oper_Response(**json_data)
-    Ethernets= []
-    ports_list= response.port.PORT_TABLE.PORT_TABLE_LIST
+    json_Port_data = await get_po_service()
+    response = Port_Oper_Response(**json_Port_data)
+    Ethernets = []
+    ports_list = response.port.PORT_TABLE.PORT_TABLE_LIST
     for port in ports_list:
         Ethernets.append(port.ifname)
 
@@ -33,10 +33,23 @@ async def get_Ethernet_List():
     return Ethernets
 
 
+async def check_untagged_if(eth:str):
+
+    json_Vlan_data = await fetch_vlans()
+    response = Vlan_Get_Response(**json_Vlan_data)
+    members_list = response.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
+    if members_list is not None:
+        for i in members_list:
+            if i.ifname == eth and i.tagging_mode == "untagged":
+                return True
+    return False
+
+
+
 async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
     
     ETH_INTERFACES= await get_Ethernet_List()
-    print(ETH_INTERFACES)
+    # print(ETH_INTERFACES)
     try:
     
         for vlan in vlan_list:
@@ -65,10 +78,14 @@ async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
                 ifname = member.ifname
                 if ifname not in ETH_INTERFACES:
                     raise ValueError(f"Invalid interface name '{ifname}'. Allowed: {', '.join(ETH_INTERFACES)}")
-
+                
                 if member.tagging_mode not in {"tagged", "untagged"}:
                     raise ValueError("Invalid tagging_mode, Must be 'tagged' or 'untagged'.")
-
+                
+                if member.tagging_mode == "untagged":
+                    is_untagged = await check_untagged_if(ifname)
+                    if is_untagged:
+                        raise ValueError(f"Interface '{ifname}' is already configured as untagged in another VLAN. Choose another interface or change the tagging mode.")
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     
@@ -115,8 +132,8 @@ async def post_vlans_service(request:Vlan_Post_Request):
 
 async def put_vlan_service(request:VlanWrapper):
     
-    vlan_List= request.wrapper.vlan.VLAN_LIST
-    member_List= request.wrapper.members.VLAN_MEMBER_LIST
+    vlan_List= request.wrapper.VLAN.VLAN_LIST
+    member_List= request.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
     await validate_vlan_data(vlan_List, member_List)
 
     try:
@@ -140,8 +157,8 @@ async def put_vlan_service(request:VlanWrapper):
 
 async def patch_vlans_service(request:VlanWrapper):
     
-    vlan_List= request.wrapper.vlan.VLAN_LIST
-    member_List= request.wrapper.members.VLAN_MEMBER_LIST
+    vlan_List= request.wrapper.VLAN.VLAN_LIST
+    member_List= request.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
     await validate_vlan_data(vlan_List, member_List)
 
     try:
