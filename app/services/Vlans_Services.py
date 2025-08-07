@@ -142,8 +142,8 @@ async def post_vlans_service(request:Vlan_Post_Request):
             }
 
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
     
 
 
@@ -168,8 +168,9 @@ async def put_vlan_service(request:VlanWrapper):
                 "message": "VLAN configuration updated",
                 "date": formatdate(timeval=None, usegmt=True)
             }
-    except Exception as e: 
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
 
 
 async def patch_vlans_service(request:VlanWrapper):
@@ -194,8 +195,8 @@ async def patch_vlans_service(request:VlanWrapper):
                 "date": formatdate(timeval=None, usegmt=True)
             }
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
 
 
 async def delete_all_vlans_from_switch():
@@ -209,11 +210,9 @@ async def delete_all_vlans_from_switch():
 
             response.raise_for_status()
             return {"detail": "All VLANs deleted from switch successfully."}
-    except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=str(e)
-            )
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
 
     
     
@@ -231,11 +230,8 @@ async def delete_vlan_by_name(vlan_name: str):
             response.raise_for_status()
             return {"detail": f"VLAN '{vlan_name}' successfully deleted from the switch."}
         
-    except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=str(e)
-            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
 
 
 
@@ -254,8 +250,5 @@ async def delete_vlan_description_by_name(vlan_name: str):
             response.raise_for_status()
             return {"detail": f"VLAN '{vlan_name}' Description successfully deleted from the switch."}
 
-    except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=str(e)
-            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e))  
