@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember
-
-
+from app.services.Port_Op_Services import get_po_service
+from app.models.Port import Port_Oper_Response
 
 load_dotenv()
  
@@ -18,17 +18,25 @@ RESTCONF_HEADERS = {
     "Content-Type": "application/yang-data+json"
 }
 
-ETH_INTERFACES = {
-    "Ethernet0", "Ethernet4", "Ethernet8", "Ethernet12", "Ethernet16", "Ethernet20",
-    "Ethernet24", "Ethernet28", "Ethernet32", "Ethernet36", "Ethernet40", "Ethernet44",
-    "Ethernet48", "Ethernet52", "Ethernet56", "Ethernet60", "Ethernet64", "Ethernet68",
-    "Ethernet72", "Ethernet76", "Ethernet80", "Ethernet84", "Ethernet88", "Ethernet92",
-    "Ethernet96", "Ethernet100", "Ethernet104", "Ethernet108", "Ethernet112", "Ethernet116",
-    "Ethernet120", "Ethernet124"
-}
 
 
-def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
+async def get_Ethernet_List():
+    json_data= await get_po_service()
+    response= Port_Oper_Response(**json_data)
+    Ethernets= []
+    ports_list= response.port.PORT_TABLE.PORT_TABLE_LIST
+    for port in ports_list:
+        Ethernets.append(port.ifname)
+
+    Ethernets.sort(key=lambda x: int(x.replace("Ethernet", "")))
+    # print("Ethernets: ", (Ethernets))
+    return Ethernets
+
+
+async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
+    
+    ETH_INTERFACES= await get_Ethernet_List()
+
     try:
     
         for vlan in vlan_list:
