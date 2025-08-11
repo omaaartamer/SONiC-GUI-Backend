@@ -65,7 +65,7 @@ async def handle_ssh_session(websocket: WebSocket):
             read_ssh = asyncio.create_task(read_from_ssh(process, websocket))
             read_ws = asyncio.create_task(read_from_ws(process, websocket))
 
-            pending = await asyncio.wait(
+            done, pending = await asyncio.wait(
                 [read_ssh, read_ws],
                 return_when=asyncio.FIRST_COMPLETED
             )
@@ -82,3 +82,4 @@ async def handle_ssh_session(websocket: WebSocket):
     except Exception as e:
             await websocket.send_text(f"Connection failed: {str(e)}")
             await websocket.close()
+
