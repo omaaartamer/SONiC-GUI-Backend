@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.models.HomePortSummary import PortSummaryList
+from app.models.Port import PortSummaryList
 from app.services.Port_Op_Services import get_po_service, get_port_summary_service
 
 

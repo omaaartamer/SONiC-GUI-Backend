@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class Port_Oper(BaseModel):
     admin_status: str
@@ -20,3 +20,14 @@ class Port_Oper_Table(BaseModel):
     
 class Port_Oper_Response(BaseModel):
     port: Port_Oper_Table = Field(..., alias="sonic-port-oper:sonic-port-oper")
+
+
+class PortSummary(BaseModel):
+    ifname: str
+    admin_status: str
+    oper_status: str
+    speed: str
+    description: Optional[str]
+
+class PortSummaryList(BaseModel):
+    ports: List[PortSummary]

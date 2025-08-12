@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from dotenv import load_dotenv
-from app.models.HomePortSummary import PortSummary
+from app.models.Port import PortSummary, Port_Oper_Response
 import httpx
 import os
 
@@ -30,26 +30,31 @@ async def get_po_service():
 
 async def get_port_summary_service():
     try:
-        async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
-            response = await client.get(
-                f"{SONIC_BASE_URL}/restconf/data/sonic-port-oper:sonic-port-oper",
-                headers=RESTCONF_HEADERS
-            )
-            response.raise_for_status()
-            raw_data = response.json()
+        json_Port_data = await get_po_service()
+        response = Port_Oper_Response(**json_Port_data)
 
-            port_data = raw_data.get("sonic-port-oper:sonic-port-oper", {}).get("PORT_TABLE", {}).get("PORT_TABLE_LIST", [])
 
-            ports = [
-                PortSummary(
-                    ifname=p.get("ifname", ""),
-                    admin_status=p.get("admin_status", ""),
-                    oper_status=p.get("oper_status", ""),
-                    speed=p.get("speed", ""),
-                    description=p.get("description", "")
-                ) for p in port_data
-            ]
+        # async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
+        #     response = await client.get(
+        #         f"{SONIC_BASE_URL}/restconf/data/sonic-port-oper:sonic-port-oper",
+        #         headers=RESTCONF_HEADERS
+        #     )
+        #     response.raise_for_status()
+        #     raw_data = response.json()
 
-            return {"ports": ports}
+        #     port_data = raw_data.get("sonic-port-oper:sonic-port-oper", {}).get("PORT_TABLE", {}).get("PORT_TABLE_LIST", [])
+
+        ports = [
+            PortSummary(
+                ifname=p.ifname,
+                admin_status=p.admin_status,
+                oper_status=p.oper_status,
+                speed=p.speed,
+                description=p.description
+            ) for p in response.port.PORT_TABLE.PORT_TABLE_LIST
+        ]
+
+        return {"ports": ports}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
