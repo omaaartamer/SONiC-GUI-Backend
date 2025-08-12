@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from dotenv import load_dotenv
-from app.models.HomePortSummary import PortSummary, PortSummaryList
+from app.models.HomePortSummary import PortSummary
 import httpx
 import os
 
