@@ -11,12 +11,15 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - FastAPI (Python)
 - JWT authentication
 - RESTCONF client for SONiC communication
+- AsyncSSH – For CLI feature that connects directly to SONiC switch
+- GitHub Actions – CI/CD linting workflow
 
 ## Current Features
 
 - User authentication
 - Vlan CRUD Operations
 - Port Operational Status Retrieval
+- Cli feature
 
 ## Getting Started
 
