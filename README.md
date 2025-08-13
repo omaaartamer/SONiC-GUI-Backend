@@ -31,7 +31,7 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/alaaashraf19/SONiC-GUI-Backend.git
+   git clone https://github.com/omaaartamer/SONiC-GUI-Backend.git
    cd SONiC-GUI-Backend
 
 2. **Setup Virtual Enviroment**

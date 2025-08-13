@@ -29,7 +29,6 @@ async def get_Ethernet_List():
         Ethernets.append(port.ifname)
 
     Ethernets.sort(key=lambda x: int(x.replace("Ethernet", "")))
-    # print("Ethernets: ", (Ethernets))
     return Ethernets
 
 
@@ -61,7 +60,6 @@ async def check_Vlan_exist(vlan:str):
 async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
     
     ETH_INTERFACES = await get_Ethernet_List()
-    # print(ETH_INTERFACES)
     try:
     
         for vlan in vlan_list:
@@ -117,8 +115,6 @@ async def fetch_vlans():
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=str(e))  
     
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 async def post_vlans_service(request:Vlan_Post_Request):
