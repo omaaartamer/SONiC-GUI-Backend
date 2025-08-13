@@ -15,10 +15,9 @@ async def add(request:Vlan_Post_Request):
 
 
 
-from fastapi import Request
 
 @router.put("/put_vlans")
-async def put_vlan(request:dict):
+async def put_vlan(request:VlanWrapper):
     return await put_vlan_service(request)
 
  

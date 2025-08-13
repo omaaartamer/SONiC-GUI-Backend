@@ -20,8 +20,8 @@ class SonicVLANMember(BaseModel):
 
 
 class Vlan_Post_Request(BaseModel):
-    vlan: SonicVLAN = Field(..., alias="sonic-vlan:VLAN")
-    members: Optional[SonicVLANMember] = Field(None, alias="sonic-vlan:VLAN_MEMBER")
+    vlan: SonicVLAN = Field(..., alias = "sonic-vlan:VLAN")
+    members: Optional[SonicVLANMember] = Field(None, alias = "sonic-vlan:VLAN_MEMBER")
 
     @model_validator(mode = 'before')
     def check_vlans_members(cls, values):
@@ -31,15 +31,22 @@ class Vlan_Post_Request(BaseModel):
         return values
 
 
-class Vlan_Update_Request(BaseModel):  # This is the nested content inside "sonic-vlan:sonic-vlan"
-    vlan: SonicVLAN = Field(..., alias="VLAN")
-    members: Optional[SonicVLANMember] = Field(None, alias="VLAN_MEMBER")
-
+class Vlan_Update_Request(BaseModel): 
+    VLAN: SonicVLAN 
+    VLAN_MEMBER: Optional[SonicVLANMember]
     @model_validator(mode="before")
     def check_vlans_members(cls, values):
         vlan_data = values.get("VLAN")
         if not vlan_data or not vlan_data.get("VLAN_LIST"):
             raise ValueError("VLAN with VLAN_LIST is required")
         return values
+    
 class VlanWrapper(BaseModel):
-    wrapper: Vlan_Update_Request = Field(..., alias="sonic-vlan:sonic-vlan")
+    wrapper: Vlan_Update_Request = Field(..., alias = "sonic-vlan:sonic-vlan")
+
+class Vlan_List(BaseModel):
+    VLAN: SonicVLAN
+    VLAN_MEMBER: Optional[SonicVLANMember]
+
+class Vlan_Get_Response(BaseModel):
+    wrapper: Vlan_List = Field(None, alias= "sonic-vlan:sonic-vlan")

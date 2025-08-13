@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from datetime import timedelta,datetime,timezone
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
 from fastapi.security import  OAuth2PasswordBearer
 from jose import JWTError, jwt

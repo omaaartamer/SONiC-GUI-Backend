@@ -6,7 +6,7 @@ from app.core.Security import hash_password, create_access_token, verify_passwor
 
 
 async def signup(user: UserCreate):
-    # Check if user already exists
+
     db_user = await users.find_one({"username": user.username.lower()})
     email_exists = await users.find_one({"email": user.email.lower()})
     if db_user:
@@ -14,7 +14,6 @@ async def signup(user: UserCreate):
     elif  email_exists:
         raise HTTPException(status_code=409, detail="email already exists")
 
-    # Insert new user into the database with hased password
     hashed_pw = hash_password(user.password)
     user_data = user.model_dump()
     user_data["hashed_password"] = hashed_pw
@@ -29,7 +28,6 @@ async def signup(user: UserCreate):
 
 async def login(user: UserLogin):
     
-    # Check if user already exists
     db_user = await users.find_one({"username": user.username})
     hashed_pw= db_user.get("hashed_password") if db_user else None
 
