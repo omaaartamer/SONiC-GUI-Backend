@@ -18,7 +18,7 @@ async def read_from_ssh(process, websocket):
                 try:
                     await websocket.send_text("** SSH session ended **")
                     await websocket.send_text("__RECONNECT__")  # signal frontend
-                except:
+                except (RuntimeError, ConnectionError):
                     pass
                 break
             await websocket.send_text(data)
@@ -87,14 +87,14 @@ async def handle_ssh_session(websocket: WebSocket):
             
             try:
                 await websocket.close()
-            except:
+            except (RuntimeError, ConnectionError):
                 pass
 
 
     except Exception as e:
         try:
             await websocket.send_text(f"Connection failed: {str(e)}")
-        except:
+        except (RuntimeError, ConnectionError):
             pass
         await websocket.close()
 
