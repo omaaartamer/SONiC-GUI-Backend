@@ -27,7 +27,7 @@ async def get_po_service():
                 headers=RESTCONF_HEADERS
             )
             response.raise_for_status()
-            redis_client.set("port_oper", json.dumps(response.json()))
+            redis_client.setex("port_oper", 900, json.dumps(response.json()))
             return Port_Oper_Response.model_validate(response.json())
         
     except Exception as e:

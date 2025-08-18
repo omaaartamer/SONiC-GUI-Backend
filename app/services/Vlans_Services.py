@@ -30,7 +30,7 @@ async def get_Ethernet_List():
         Ethernets.append(port.ifname)
 
     Ethernets.sort(key=lambda x: int(x.replace("Ethernet", "")))
-    redis_client.set("ethernet_data", json.dumps(Ethernets))
+    redis_client.setex("ethernet_data", 900, json.dumps(Ethernets))
     return Ethernets
 
 
@@ -115,7 +115,7 @@ async def fetch_vlans():
             )
 
             response.raise_for_status()
-            redis_client.set("cashed_vlans", json.dumps(response.json()))  # Cache for 1 hour
+            redis_client.setex("cashed_vlans", 900, json.dumps(response.json()))  # Cache for 1 hour
             return Vlan_Get_Response.model_validate(response.json())
         
     except httpx.HTTPStatusError as e:
