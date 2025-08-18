@@ -1,17 +1,16 @@
 import re
 import os
 import httpx
+import json
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember, Vlan_Get_Response
 from app.services.Port_Op_Services import get_po_service
-from app.models.Port import Port_Oper_Response
+from app.redis_client import redis_client
 
 load_dotenv()
- 
 SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
-
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json",
@@ -19,24 +18,26 @@ RESTCONF_HEADERS = {
 }
 
 
-
 async def get_Ethernet_List():
-    json_Port_data = await get_po_service()
-    response = Port_Oper_Response(**json_Port_data)
+    cashed = redis_client.get("ethernet_data")
+    if cashed:
+        return json.loads(cashed)
+    
+    response = await get_po_service()
     Ethernets = []
     ports_list = response.port.PORT_TABLE.PORT_TABLE_LIST
     for port in ports_list:
         Ethernets.append(port.ifname)
 
     Ethernets.sort(key=lambda x: int(x.replace("Ethernet", "")))
+    redis_client.set("ethernet_data", json.dumps(Ethernets))
     return Ethernets
 
 
 async def check_untagged_if(eth:str):
-    json_Vlan_data = await fetch_vlans()
-    if not json_Vlan_data: # if not vlans exist so response will be empty
+    response = await fetch_vlans()
+    if not response: # if not vlans exist so response will be empty
         return
-    response = Vlan_Get_Response(**json_Vlan_data)
     members_list = response.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
     if members_list is not None:
         for i in members_list:
@@ -46,10 +47,9 @@ async def check_untagged_if(eth:str):
 
 
 async def check_Vlan_exist(vlan:str):
-    json_Vlan_data = await fetch_vlans()
-    if not json_Vlan_data: # if not vlans exist so response will be empty
+    response = await fetch_vlans()
+    if not response: # if not vlans exist so response will be empty
         return
-    response = Vlan_Get_Response(**json_Vlan_data)
     vlan_names = response.wrapper.VLAN.VLAN_LIST
     for name in vlan_names:
         if name == vlan:
@@ -103,6 +103,11 @@ async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
 
 async def fetch_vlans():
     try:
+        cached_data = redis_client.get("vlans_data")
+        if cached_data:
+            print("Cache HIT")
+            return Vlan_Get_Response.model_validate(json.loads(cached_data))
+        
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.get(
                 f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
@@ -110,7 +115,8 @@ async def fetch_vlans():
             )
 
             response.raise_for_status()
-            return response.json()
+            redis_client.set("cashed_vlans", json.dumps(response.json()))  # Cache for 1 hour
+            return Vlan_Get_Response.model_validate(response.json())
         
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=str(e))  

@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from app.models.Vlan import Vlan_Post_Request, VlanWrapper 
+from app.models.Vlan import Vlan_Post_Request, VlanWrapper, Vlan_Get_Response
 from app.services.Vlans_Services import fetch_vlans, post_vlans_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name, put_vlan_service
 
 router = APIRouter()
 
-@router.get("/")
+@router.get("/", response_model = Vlan_Get_Response)
 async def get_vlans():
     return await fetch_vlans()   
 
