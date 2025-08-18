@@ -14,9 +14,15 @@ async def read_from_ssh(process, websocket):
     try:
         while True:
             data = await process.stdout.read(1024)
-            if data:
-                await websocket.send_text(data)
-                await asyncio.sleep(0.1)
+            if not data:
+                try:
+                    await websocket.send_text("** SSH session ended **")
+                    await websocket.send_text("__RECONNECT__")  # signal frontend
+                except:
+                    pass
+                break
+            await websocket.send_text(data)
+            await asyncio.sleep(0.1)
     except asyncio.CancelledError:
         pass
 
@@ -78,8 +84,17 @@ async def handle_ssh_session(websocket: WebSocket):
             if not process.stdout.at_eof():
                 process.stdin.write("exit\n")
                 await process.wait()
+            
+            try:
+                await websocket.close()
+            except:
+                pass
+
 
     except Exception as e:
+        try:
             await websocket.send_text(f"Connection failed: {str(e)}")
-            await websocket.close()
+        except:
+            pass
+        await websocket.close()
 
