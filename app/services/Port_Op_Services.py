@@ -1,7 +1,8 @@
 import os
 import httpx
 import json
-from fastapi import HTTPException
+import time
+from fastapi import HTTPException, Request
 from dotenv import load_dotenv
 from app.models.Port import PortSummary, Port_Oper_Response
 from app.redis_client import redis_client
@@ -13,6 +14,17 @@ RESTCONF_HEADERS = {
 load_dotenv()
 SONIC_BASE_URL=os.getenv("SONIC_BASE_URL")
 
+async def sliding_window_rate_limiter(request: Request, limit: int = 5, window_size: int = 60):
+        client_id = request.client.host 
+        key = f"rate_limit:{client_id}"
+        current_time = int(time.time())
+        
+        redis_client.zremrangebyscore(key, 0, current_time - window_size)
+        
+        redis_client.zadd(key, {current_time: current_time})
+        
+        if redis_client.zcard(key) > limit: #how many requests has this client made in the current sliding window
+            raise HTTPException(status_code=429, detail="Too Many Requests")
 
 async def get_po_service():
     try:
