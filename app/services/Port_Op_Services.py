@@ -14,7 +14,7 @@ RESTCONF_HEADERS = {
 load_dotenv()
 SONIC_BASE_URL=os.getenv("SONIC_BASE_URL")
 
-async def sliding_window_rate_limiter(request: Request, limit: int = 30, window_size: int = 60):
+async def sliding_window_rate_limiter(request: Request, limit: int = 1000, window_size: int = 60):
         client_id = request.client.host 
         key = f"rate_limit:{client_id}"
         current_time = int(time.time())
