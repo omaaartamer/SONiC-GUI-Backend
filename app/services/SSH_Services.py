@@ -144,18 +144,21 @@ async def switch_status(websocket: WebSocket):
             username=SSH_USERNAME,
             password=SSH_PASSWORD
         ) as conn: 
-            cpu_result = await run_command(conn, "top -b -n 1")
-            cpu_usage_percentage = parse_top_output(cpu_result)
-            # print("inside switch status cpu = ", cpu_used)
+            while True:
+                cpu_result = await run_command(conn, "top -b -n 1")
+                cpu_usage_percentage = parse_top_output(cpu_result)
+                # print("inside switch status cpu = ", cpu_used)
 
-            memory_result = await run_command(conn, "free -h")
-            mem_percentage = parse_free_output(memory_result)
-            # print("inside switch status mem perc = ", mem_percentage)
+                memory_result = await run_command(conn, "free -h")
+                mem_percentage = parse_free_output(memory_result)
+                # print("inside switch status mem perc = ", mem_percentage)
 
-            await websocket.send_json({
-                "cpu_used_percent": cpu_usage_percentage,
-                "memory_used_percent": mem_percentage
-            })
+                await websocket.send_json({
+                    "cpu_used_percent": cpu_usage_percentage,
+                    "memory_used_percent": mem_percentage
+                })
+
+                await asyncio.sleep(2)
 
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
