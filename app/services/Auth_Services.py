@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from app.models.User import UserCreate, UserLogin
-from app.db.tiny import db, users_table, User
+from app.db.tiny import users_table, User
 from app.core.Security import hash_password, create_access_token, verify_password
 import os
 
