@@ -1,8 +1,11 @@
+import os
+import re
 import asyncssh
 import asyncio
-from fastapi import WebSocket, WebSocketDisconnect
 from dotenv import load_dotenv
-import os
+from fastapi import WebSocket, WebSocketDisconnect
+from app.models.Switch_Status import Tasks, CPU, Status
+
 
 load_dotenv()
 
@@ -97,4 +100,51 @@ async def handle_ssh_session(websocket: WebSocket):
         except (RuntimeError, ConnectionError):
             pass
         await websocket.close()
+
+async def run_command(conn, command: str):
+    try:
+        result = await conn.run(command)
+        # print (result.stdout.strip())
+        return result.stdout.strip()
+    except Exception as e:
+        raise RuntimeError(f"SSH command failed: {str(e)}")
+
+
+def parse_top_output(output: str) -> Status:
+    lines = output.splitlines()
+    tasks_data = {}
+    cpu_data = {}
+
+    for line in lines:
+        if line.startswith("Tasks:"):
+            match = re.findall(r"(\d+)\s+(\w+)", line)
+            if match:
+                tasks_data = {status: int(num) for num, status in match}
+
+        elif line.startswith("%Cpu(s):"):
+            match = re.findall(r"([\d\.]+)\s+(\w+)", line)
+            if match:
+                cpu_data = {metric: float(val) for val, metric in match}
+
+    return Status(
+        tasks=Tasks(**tasks_data),
+        cpu=CPU(**cpu_data)
+    )
+
+async def switch_status(websocket: WebSocket):
+    try:
+        async with asyncssh.connect(
+            SSH_SWITCH_IP,
+            username=SSH_USERNAME,
+            password=SSH_PASSWORD
+        ) as conn: 
+            result = await run_command(conn, "top -b -n 1")
+            parsed = parse_top_output(result)
+            print(parsed.model_dump())
+            await websocket.send_json(parsed.model_dump())
+    except Exception as e:
+        await websocket.send_text(f"Error: {str(e)}")
+    finally:
+        await websocket.close()
+
 
