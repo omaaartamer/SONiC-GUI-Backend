@@ -4,7 +4,6 @@ import asyncssh
 import asyncio
 from dotenv import load_dotenv
 from fastapi import WebSocket, WebSocketDisconnect
-from app.models.Switch_Status import Tasks, CPU, Status
 
 
 load_dotenv()
@@ -104,32 +103,39 @@ async def handle_ssh_session(websocket: WebSocket):
 async def run_command(conn, command: str):
     try:
         result = await conn.run(command)
-        # print (result.stdout.strip())
         return result.stdout.strip()
     except Exception as e:
         raise RuntimeError(f"SSH command failed: {str(e)}")
 
 
-def parse_top_output(output: str) -> Status:
+def parse_top_output(output: str):
+
     lines = output.splitlines()
-    tasks_data = {}
-    cpu_data = {}
 
     for line in lines:
-        if line.startswith("Tasks:"):
-            match = re.findall(r"(\d+)\s+(\w+)", line)
+        if line.startswith("%Cpu(s):"):
+            match = re.findall(r"([\d\.]+)\s+id", line)
             if match:
-                tasks_data = {status: int(num) for num, status in match}
+                # print("in top", float(match[0]))
+                return 100 - float(match[0])
+                
+    raise ValueError("CPU idle value not found in output")
 
-        elif line.startswith("%Cpu(s):"):
-            match = re.findall(r"([\d\.]+)\s+(\w+)", line)
-            if match:
-                cpu_data = {metric: float(val) for val, metric in match}
+def parse_free_output(output: str):
 
-    return Status(
-        tasks=Tasks(**tasks_data),
-        cpu=CPU(**cpu_data)
-    )
+    lines = output.splitlines()
+
+    for line in lines:
+        if line.startswith("Mem:"):
+            parts = line.split()
+            total = float(parts[1][:-2])
+            available = float(parts[6][:-2])
+            # print(total)
+            # print(available)
+            mem_percentage = ((total - available)/ total) * 100
+            return mem_percentage
+        
+    raise ValueError("Mem value not found in output")
 
 async def switch_status(websocket: WebSocket):
     try:
@@ -138,12 +144,22 @@ async def switch_status(websocket: WebSocket):
             username=SSH_USERNAME,
             password=SSH_PASSWORD
         ) as conn: 
-            result = await run_command(conn, "top -b -n 1")
-            parsed = parse_top_output(result)
-            print(parsed.model_dump())
-            await websocket.send_json(parsed.model_dump())
+            cpu_result = await run_command(conn, "top -b -n 1")
+            cpu_usage_percentage = parse_top_output(cpu_result)
+            # print("inside switch status cpu = ", cpu_used)
+
+            memory_result = await run_command(conn, "free -h")
+            mem_percentage = parse_free_output(memory_result)
+            # print("inside switch status mem perc = ", mem_percentage)
+
+            await websocket.send_json({
+                "cpu_used_percent": cpu_usage_percentage,
+                "memory_used_percent": mem_percentage
+            })
+
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
+    
     finally:
         await websocket.close()
 
