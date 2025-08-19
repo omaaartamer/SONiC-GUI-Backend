@@ -12,25 +12,25 @@ async def get_vlans(request: Request):
 
 
 @router.post("/add_vlans")
-async def add(request:Vlan_Post_Request):
+async def add(request:Request, body:Vlan_Post_Request):
     await sliding_window_rate_limiter(request)
-    return await post_vlans_service(request) 
+    return await post_vlans_service(body) 
 
 
 
 
 @router.put("/put_vlans")
-async def put_vlan(request:VlanWrapper):
+async def put_vlan(request:Request, body:VlanWrapper):
     await sliding_window_rate_limiter(request)
-    return await put_vlan_service(request)
+    return await put_vlan_service(body)
 
  
 
 
 @router.patch("/patch_vlans")
-async def patch_vlans(request:VlanWrapper): 
+async def patch_vlans(request:Request, body:VlanWrapper): 
     await sliding_window_rate_limiter(request)
-    return await patch_vlans_service(request)
+    return await patch_vlans_service(body)
 
 
 @router.delete("/delete/all", summary="Delete ALL VLAN config (VLANs + Members)")
