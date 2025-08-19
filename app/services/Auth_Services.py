@@ -1,18 +1,18 @@
 from fastapi import HTTPException
 from app.models.User import UserCreate, UserLogin
-from app.db.mongo import db,users
+from app.db.tiny import db, users_table, User
 from app.core.Security import hash_password, create_access_token, verify_password
+import os
 
 
+def signup(user: UserCreate):
+    db_user = users_table.get(User.username == user.username.lower())
+    email_exists = users_table.get(User.email == user.email.lower())
 
-async def signup(user: UserCreate):
-
-    db_user = await users.find_one({"username": user.username.lower()})
-    email_exists = await users.find_one({"email": user.email.lower()})
     if db_user:
         raise HTTPException(status_code=409, detail="Username already exists")
-    elif  email_exists:
-        raise HTTPException(status_code=409, detail="email already exists")
+    elif email_exists:
+        raise HTTPException(status_code=409, detail="Email already exists")
 
     hashed_pw = hash_password(user.password)
     user_data = user.model_dump()
@@ -21,15 +21,17 @@ async def signup(user: UserCreate):
 
     user_data["role"] = "admin"
 
+    users_table.insert(user_data)
 
-    await users.insert_one(user_data)
-    print("Using DB:", db.name)
+    print("Using DB file:", os.getenv("DB_PATH"))
+
+    return {"message": "User created successfully"}
 
 
-async def login(user: UserLogin):
-    
-    db_user = await users.find_one({"username": user.username})
-    hashed_pw= db_user.get("hashed_password") if db_user else None
+
+def login(user: UserLogin):
+    db_user = users_table.get(User.username == user.username.lower())
+    hashed_pw = db_user.get("hashed_password") if db_user else None
 
     if not db_user:
         raise HTTPException(status_code=403, detail="Invalid username or password")
@@ -37,11 +39,10 @@ async def login(user: UserLogin):
     if not hashed_pw or not verify_password(user.password, hashed_pw):
         raise HTTPException(status_code=403, detail="Invalid username or password")
 
-    access_token = create_access_token(data={"sub": db_user["username"], "role":db_user["role"]})
+    access_token = create_access_token(
+        data={"sub": db_user["username"], "role": db_user["role"]}
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        # "username": db_user["username"],
-        # "user_id": db_user["user_id"],
-        # "role": db_user.get("role", "user") #if no role assigned, default to "user"
     }

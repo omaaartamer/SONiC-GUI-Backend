@@ -7,9 +7,9 @@ router = APIRouter()
 
 @router.post("/signup", response_model=UserLoginResponse)
 async def signup(user: UserCreate):
-        return await signup_service(user)
+        return signup_service(user)
     
 @router.post("/login", response_model=UserLoginResponse)
 async def login(user: UserLogin):
-    return await login_service(user)
+    return login_service(user)
 
