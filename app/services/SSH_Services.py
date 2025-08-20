@@ -163,7 +163,5 @@ async def switch_status(websocket: WebSocket):
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
     
-    finally:
-        await websocket.close()
 
 
