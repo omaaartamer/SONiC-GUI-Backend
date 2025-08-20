@@ -4,13 +4,24 @@ import asyncssh
 import asyncio
 from dotenv import load_dotenv
 from fastapi import WebSocket, WebSocketDisconnect
-
+from jose import JWTError, jwt
 
 load_dotenv()
 
 SSH_SWITCH_IP = os.getenv("SONIC_SWITCH_IP")
-SSH_USERNAME = os.getenv("SSH_USERNAME")
-SSH_PASSWORD = os.getenv("SSH_PASSWORD")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+
+def get_user_from_token(token: str):
+    """Extract username from JWT token"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise ValueError("Username not found in token")
+        return username
+    except JWTError:
+        raise ValueError("Invalid token")
 
 async def read_from_ssh(process, websocket):
     try:
@@ -19,7 +30,7 @@ async def read_from_ssh(process, websocket):
             if not data:
                 try:
                     await websocket.send_text("** SSH session ended **")
-                    await websocket.send_text("__RECONNECT__")  # signal frontend
+                    await websocket.send_text("__RECONNECT__")   
                 except (RuntimeError, ConnectionError):
                     pass
                 break
@@ -28,42 +39,36 @@ async def read_from_ssh(process, websocket):
     except asyncio.CancelledError:
         pass
 
-
 async def read_from_ws(process, websocket):
-
     try:
         while True:
-
             command = await websocket.receive_text()
             process.stdin.write(command + '\n')
-
     except WebSocketDisconnect:
-
         try:
             await websocket.send_text("** Client disconnected **")
-
-        except RuntimeError: #WebSocket already closed, no need to send
+        except RuntimeError: 
             pass
-
         finally:
             try:
                 if websocket.client_state.name != "DISCONNECTED":
                     await websocket.close()
-            except RuntimeError: # If already closed during disconnect
+            except RuntimeError: 
                 pass
 
-async def handle_ssh_session(websocket: WebSocket):
-
+async def handle_ssh_session(websocket: WebSocket, token: str, password: str):
     try:
+        
+        username = get_user_from_token(token)
+        
         async with asyncssh.connect(
             SSH_SWITCH_IP,
-            username=SSH_USERNAME,
-            password=SSH_PASSWORD
+            username=username,
+            password=password
         ) as conn:
             
             try:
                 process = await conn.create_process(term_type='xterm')
-
             except Exception as e:
                 await websocket.send_text(f"Failed to create SSH process: {str(e)}")
                 await websocket.close()
@@ -92,7 +97,12 @@ async def handle_ssh_session(websocket: WebSocket):
             except (RuntimeError, ConnectionError):
                 pass
 
-
+    except ValueError as e:
+        try:
+            await websocket.send_text(f"Authentication failed: {str(e)}")
+        except (RuntimeError, ConnectionError):
+            pass
+        await websocket.close()
     except Exception as e:
         try:
             await websocket.send_text(f"Connection failed: {str(e)}")
@@ -165,6 +175,3 @@ async def switch_status(websocket: WebSocket):
 
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
-    
-
-

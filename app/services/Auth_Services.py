@@ -10,9 +10,16 @@ def signup(user: UserCreate):
     email_exists = users_table.get(User.email == user.email.lower())
 
     if db_user:
-        raise HTTPException(status_code=409, detail="Username already exists")
+        raise HTTPException(
+            status_code=409,
+            detail=[{"loc": ["body", "username"], "msg": "Username already exists"}]
+        )
     elif email_exists:
-        raise HTTPException(status_code=409, detail="Email already exists")
+        raise HTTPException(
+            status_code=409,
+            detail=[{"loc": ["body", "email"], "msg": "Email already exists"}]
+        )
+
 
     hashed_pw = hash_password(user.password)
     user_data = user.model_dump()
@@ -25,7 +32,7 @@ def signup(user: UserCreate):
 
     print("Using DB file:", os.getenv("DB_PATH"))
 
-    return {"message": "User created successfully"}
+    return "User created successfully"
 
 
 

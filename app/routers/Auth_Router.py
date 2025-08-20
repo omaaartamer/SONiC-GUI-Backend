@@ -5,7 +5,7 @@ from app.services.Auth_Services import signup as signup_service, login as login_
 
 router = APIRouter()
 
-@router.post("/signup", response_model=UserLoginResponse)
+@router.post("/signup", response_model=str)
 async def signup(user: UserCreate):
         return signup_service(user)
     
