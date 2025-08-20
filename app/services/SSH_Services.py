@@ -9,6 +9,8 @@ from jose import JWTError, jwt
 load_dotenv()
 
 SSH_SWITCH_IP = os.getenv("SONIC_SWITCH_IP")
+SSH_USERNAME = os.getenv("SSH_USERNAME")
+SSH_PASSWORD = os.getenv("SSH_PASSWORD")
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 

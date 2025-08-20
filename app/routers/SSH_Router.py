@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.services.SSH_Services import handle_ssh_session, switch_status
 from app.core.Security import verify_token
 import json
