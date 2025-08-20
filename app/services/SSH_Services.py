@@ -160,6 +160,9 @@ async def switch_status(websocket: WebSocket):
 
                 await asyncio.sleep(2)
 
+    except WebSocketDisconnect:
+        print("Client disconnected, stopping...")
+
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
     
