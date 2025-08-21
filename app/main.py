@@ -29,7 +29,7 @@ def get_me(current_user: dict = Depends(get_current_user)):
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(vlans_router, prefix="/vlans",tags=["Vlans"])
 app.include_router(port_op_router, prefix="/portOp",tags=["Port Operations"])
-app.include_router(ssh_router, tags=["SSH"])
+app.include_router(ssh_router, prefix="/switch", tags=["SSH"])
 app.include_router(router, tags=["token"])
 
 
