@@ -1,10 +1,10 @@
+import os
 from dotenv import load_dotenv
 from datetime import timedelta,datetime,timezone
 from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
 from fastapi.security import  OAuth2PasswordBearer
 from jose import JWTError, jwt
-import os
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -24,9 +24,9 @@ def create_access_token(data: dict):
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-# Verify a password on login
 def verify_password(password: str, hashed_password: str) -> bool:
     return pwd_context.verify(password,hashed_password)
+
 
 
 def get_current_user(token:str = Depends(oauth2_scheme)):
@@ -38,17 +38,10 @@ def get_current_user(token:str = Depends(oauth2_scheme)):
             raise HTTPException(status_code=401, detail="Could not validate credentials")
         return {"username": username,"role": role}
     except JWTError:
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
-    
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
 def is_admin(current_user:dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="admins only")
     return current_user
-
-def verify_token(token: str):
-    """Verify JWT token and return payload"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
