@@ -1,9 +1,14 @@
+import os
+import asyncssh
 from fastapi import HTTPException
-from app.models.User import UserCreate, UserLogin
+from app.models.User import UserCreate
 from app.db.tiny import users_table, User
 from app.core.Security import hash_password, create_access_token, verify_password
-import os
+from dotenv import load_dotenv
+from app.services.SSH_Services import ssh_sessions
 
+load_dotenv()
+SSH_SWITCH_IP = os.getenv("SONIC_SWITCH_IP")
 
 def signup(user: UserCreate):
     db_user = users_table.get(User.username == user.username.lower())
@@ -36,20 +41,40 @@ def signup(user: UserCreate):
 
 
 
-def login(user: UserLogin):
-    db_user = users_table.get(User.username == user.username.lower())
-    hashed_pw = db_user.get("hashed_password") if db_user else None
+async def login(websocket):
+    await websocket.accept()
+    try:
+        creds = await websocket.receive_json()
+        username = creds["username"]
+        password = creds["password"]
 
-    if not db_user:
-        raise HTTPException(status_code=403, detail="Invalid username or password")
+        db_user = users_table.get(User.username == username.lower())
+        hashed_pw = db_user.get("hashed_password") if db_user else None
 
-    if not hashed_pw or not verify_password(user.password, hashed_pw):
-        raise HTTPException(status_code=403, detail="Invalid username or password")
+        if not db_user or not hashed_pw or not verify_password(password, hashed_pw):
+            await websocket.send_json({"error": "Invalid username or password"})
+            await websocket.close()
+            return
 
-    access_token = create_access_token(
-        data={"sub": db_user["username"], "role": db_user["role"]}
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+        access_token = create_access_token(
+            data={"sub": db_user["username"], "role": db_user["role"]}
+        )
+        
+        
+        conn = await asyncssh.connect(
+            SSH_SWITCH_IP,
+            username=username,
+            password=password
+        )
+
+        ssh_sessions[username] = conn
+
+        await websocket.send_json({
+            "access_token": access_token,
+            "token_type": "bearer",
+            "message": "Login successful, SSH session ready"
+        })
+
+    except Exception as e:
+        await websocket.send_json({"error": str(e)})
+        await websocket.close()
