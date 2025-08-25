@@ -137,6 +137,17 @@ async def post_vlans_service(request:Vlan_Post_Request):
                                       json=request.model_dump(by_alias=True))
             
             response.raise_for_status()
+
+            # Step 2: Fetch fresh VLAN data
+            fresh_response = await client.get(
+                f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
+                headers=RESTCONF_HEADERS,
+            )
+            fresh_response.raise_for_status()
+
+            # Step 3: Update Redis cache
+            redis_client.setex("vlans_data", 300, json.dumps(fresh_response.json()))
+
             return {
                 "status": response.status_code,
                 "message": "VLAN added successfully",
@@ -165,6 +176,19 @@ async def put_vlan_service(request:VlanWrapper):
             )
 
             response.raise_for_status()
+
+             # Step 2: Fetch fresh VLAN data
+            fresh_response = await client.get(
+                f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
+                headers=RESTCONF_HEADERS,
+            )
+            fresh_response.raise_for_status()
+
+            # Step 3: Update Redis cache
+            redis_client.setex("vlans_data", 300, json.dumps(fresh_response.json()))
+
+
+
             return {
                 "status": response.status_code,
                 "message": "VLAN configuration updated",
