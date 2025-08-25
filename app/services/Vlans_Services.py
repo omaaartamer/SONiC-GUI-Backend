@@ -52,7 +52,7 @@ async def check_Vlan_exist(vlan:str):
         return
     vlan_names = response.wrapper.VLAN.VLAN_LIST
     for name in vlan_names:
-        if name == vlan:
+        if name.name == vlan:
             return True
     return False
 
