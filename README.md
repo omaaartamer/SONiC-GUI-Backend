@@ -12,6 +12,8 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - JWT authentication
 - RESTCONF client for SONiC communication
 - AsyncSSH – For CLI feature that connects directly to SONiC switch
+- Redis – For caching (Ports, VLANs) and rate limiting
+- TinyDB – Lightweight JSON-based storage for user data
 - GitHub Actions – CI/CD linting workflow
 
 ## Current Features
