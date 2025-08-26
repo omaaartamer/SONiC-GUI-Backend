@@ -13,5 +13,6 @@ async def get_port_oper(request: Request):
     return await get_po_service()
 
 @router.get("/status-summary", response_model=PortSummaryList)
-async def get_port_summary():
+async def get_port_summary(request: Request):
+    await sliding_window_rate_limiter(request)
     return await get_port_summary_service()
