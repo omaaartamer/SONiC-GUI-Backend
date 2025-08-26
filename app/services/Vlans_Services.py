@@ -19,9 +19,9 @@ RESTCONF_HEADERS = {
 
 
 async def get_Ethernet_List():
-    cashed = redis_client.get("ethernet_data")
-    if cashed:
-        return json.loads(cashed)
+    cached = redis_client.get("ethernet_data")
+    if cached:
+        return json.loads(cached)
     
     response = await get_po_service()
     Ethernets = []

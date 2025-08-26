@@ -16,7 +16,7 @@ class SonicVLAN(BaseModel):
     VLAN_LIST: List[Vlan]
 
 class SonicVLANMember(BaseModel):
-    VLAN_MEMBER_LIST: Optional[List[Vlan_memberList]]=None
+    VLAN_MEMBER_LIST: Optional[List[Vlan_memberList]] = None
 
 
 class Vlan_Post_Request(BaseModel):
@@ -46,7 +46,7 @@ class VlanWrapper(BaseModel):
 
 class Vlan_List(BaseModel):
     VLAN: SonicVLAN
-    VLAN_MEMBER: Optional[SonicVLANMember]
+    VLAN_MEMBER: Optional[SonicVLANMember] = None
 
 class Vlan_Get_Response(BaseModel):
-    wrapper: Vlan_List = Field(None, alias= "sonic-vlan:sonic-vlan")
+    wrapper: Vlan_List = Field(None, alias = "sonic-vlan:sonic-vlan")

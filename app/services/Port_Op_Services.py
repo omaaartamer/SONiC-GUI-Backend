@@ -14,7 +14,7 @@ RESTCONF_HEADERS = {
 load_dotenv()
 SONIC_BASE_URL=os.getenv("SONIC_BASE_URL")
 
-async def sliding_window_rate_limiter(request: Request, limit: int = 1000, window_size: int = 60):
+async def sliding_window_rate_limiter(request: Request, limit: int = 600, window_size: int = 60):
         client_id = request.client.host 
         key = f"rate_limit:{client_id}"
         current_time = int(time.time())
@@ -28,10 +28,10 @@ async def sliding_window_rate_limiter(request: Request, limit: int = 1000, windo
 
 async def get_po_service():
     try:
-        cashed = redis_client.get("port_oper")
-        if cashed:
+        cached = redis_client.get("port_oper")
+        if cached:
             print("Cache HIT")
-            return Port_Oper_Response.model_validate(json.loads(cashed))
+            return Port_Oper_Response.model_validate(json.loads(cached))
         
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.get(
