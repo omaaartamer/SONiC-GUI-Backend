@@ -28,7 +28,7 @@ async def put_vlan(request:Request, body:VlanWrapper):
 
 
 @router.patch("/patch_vlans")
-async def patch_vlans(request:Request, body:VlanWrapper): 
+async def patch_vlans(body:VlanWrapper): 
     return await patch_vlans_service(body)
 
 
