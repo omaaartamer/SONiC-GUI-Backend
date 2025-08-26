@@ -29,7 +29,6 @@ async def put_vlan(request:Request, body:VlanWrapper):
 
 @router.patch("/patch_vlans")
 async def patch_vlans(request:Request, body:VlanWrapper): 
-    await sliding_window_rate_limiter(request)
     return await patch_vlans_service(body)
 
 
