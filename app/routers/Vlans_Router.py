@@ -7,13 +7,13 @@ router = APIRouter()
 
 @router.get("/", response_model = Vlan_Get_Response)
 async def get_vlans(request: Request):
-    await sliding_window_rate_limiter(request)
+    await sliding_window_rate_limiter(request, "get_vlans")
     return await fetch_vlans()   
 
 
 @router.post("/add_vlans")
 async def add(request:Request, body:Vlan_Post_Request):
-    await sliding_window_rate_limiter(request)
+    await sliding_window_rate_limiter(request, "add_vlan")
     return await post_vlans_service(body) 
 
 
@@ -21,7 +21,7 @@ async def add(request:Request, body:Vlan_Post_Request):
 
 @router.put("/put_vlans")
 async def put_vlan(request:Request, body:VlanWrapper):
-    await sliding_window_rate_limiter(request)
+    await sliding_window_rate_limiter(request, "put_vlan")
     return await put_vlan_service(body)
 
  

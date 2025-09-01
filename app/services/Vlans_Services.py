@@ -129,7 +129,7 @@ async def fetch_vlans():
             )
 
             response.raise_for_status()
-            redis_client.setex("vlans_data", 300, json.dumps(response.json()))  # Cache for 1 hour
+            redis_client.setex("vlans_data", 300, json.dumps(response.json()))  
             return Vlan_Get_Response.model_validate(response.json())
         
     except httpx.HTTPStatusError as e:
