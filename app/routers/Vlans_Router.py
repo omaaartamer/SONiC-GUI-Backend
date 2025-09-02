@@ -1,31 +1,35 @@
-from fastapi import APIRouter
-from app.models.Vlan import Vlan_Post_Request, VlanWrapper 
+from fastapi import APIRouter, Request
+from app.models.Vlan import Vlan_Post_Request, VlanWrapper, Vlan_Get_Response
 from app.services.Vlans_Services import fetch_vlans, post_vlans_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name, put_vlan_service
+from app.services.Port_Op_Services import sliding_window_rate_limiter
 
 router = APIRouter()
 
-@router.get("/")
-async def get_vlans():
+@router.get("/", response_model = Vlan_Get_Response)
+async def get_vlans(request: Request):
+    await sliding_window_rate_limiter(request, "get_vlans")
     return await fetch_vlans()   
 
 
 @router.post("/add_vlans")
-async def add(request:Vlan_Post_Request):
-    return await post_vlans_service(request) 
+async def add(request:Request, body:Vlan_Post_Request):
+    await sliding_window_rate_limiter(request, "add_vlan")
+    return await post_vlans_service(body) 
 
 
 
 
 @router.put("/put_vlans")
-async def put_vlan(request:VlanWrapper):
-    return await put_vlan_service(request)
+async def put_vlan(request:Request, body:VlanWrapper):
+    await sliding_window_rate_limiter(request, "put_vlan")
+    return await put_vlan_service(body)
 
  
 
 
 @router.patch("/patch_vlans")
-async def patch_vlans(request:VlanWrapper): 
-    return await patch_vlans_service(request)
+async def patch_vlans(body:VlanWrapper): 
+    return await patch_vlans_service(body)
 
 
 @router.delete("/delete/all", summary="Delete ALL VLAN config (VLANs + Members)")

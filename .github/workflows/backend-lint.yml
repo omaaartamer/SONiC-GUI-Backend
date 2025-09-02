@@ -26,6 +26,13 @@ jobs:
           
       - name: Lint with flake8
         run: flake8 . --max-line-length=200
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Build Docker Image
         run: docker build -t my-fastapi-app .

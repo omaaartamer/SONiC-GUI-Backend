@@ -1,15 +1,17 @@
-from fastapi import APIRouter
-from app.models.User import UserCreate, UserLoginResponse,UserLogin
+from fastapi import APIRouter, WebSocket
+from app.models.User import UserCreate
 from app.services.Auth_Services import signup as signup_service, login as login_service
 
 
 router = APIRouter()
 
-@router.post("/signup", response_model=UserLoginResponse)
-async def signup(user: UserCreate):
-        return await signup_service(user)
+@router.post("/signup", response_model=str)
+def signup(user: UserCreate):
+        return signup_service(user)
     
-@router.post("/login", response_model=UserLoginResponse)
-async def login(user: UserLogin):
-    return await login_service(user)
+
+@router.websocket("/login")
+async def login(websocket: WebSocket):
+    await login_service(websocket)
+
 

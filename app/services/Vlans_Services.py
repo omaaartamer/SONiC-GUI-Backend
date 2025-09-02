@@ -1,17 +1,16 @@
 import re
 import os
 import httpx
+import json
 from fastapi import HTTPException
 from dotenv import load_dotenv
 from email.utils import formatdate
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper, SonicVLAN, SonicVLANMember, Vlan_Get_Response
 from app.services.Port_Op_Services import get_po_service
-from app.models.Port import Port_Oper_Response
+from app.redis_client import redis_client
 
 load_dotenv()
- 
 SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
-
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json",
@@ -19,24 +18,26 @@ RESTCONF_HEADERS = {
 }
 
 
-
 async def get_Ethernet_List():
-    json_Port_data = await get_po_service()
-    response = Port_Oper_Response(**json_Port_data)
+    cached = redis_client.get("ethernet_data")
+    if cached:
+        return json.loads(cached)
+    
+    response = await get_po_service()
     Ethernets = []
     ports_list = response.port.PORT_TABLE.PORT_TABLE_LIST
     for port in ports_list:
         Ethernets.append(port.ifname)
 
     Ethernets.sort(key=lambda x: int(x.replace("Ethernet", "")))
+    redis_client.setex("ethernet_data", 300, json.dumps(Ethernets))
     return Ethernets
 
 
 async def check_untagged_if(eth:str):
-    json_Vlan_data = await fetch_vlans()
-    if not json_Vlan_data: # if not vlans exist so response will be empty
+    response = await fetch_vlans()
+    if not response: # if not vlans exist so response will be empty
         return
-    response = Vlan_Get_Response(**json_Vlan_data)
     members_list = response.wrapper.VLAN_MEMBER.VLAN_MEMBER_LIST
     if members_list is not None:
         for i in members_list:
@@ -46,13 +47,12 @@ async def check_untagged_if(eth:str):
 
 
 async def check_Vlan_exist(vlan:str):
-    json_Vlan_data = await fetch_vlans()
-    if not json_Vlan_data: # if not vlans exist so response will be empty
+    response = await fetch_vlans()
+    if not response: # if not vlans exist so response will be empty
         return
-    response = Vlan_Get_Response(**json_Vlan_data)
-    vlan_names = response.wrapper.VLAN.VLAN_LIST
-    for name in vlan_names:
-        if name == vlan:
+    vlans = response.wrapper.VLAN.VLAN_LIST
+    for v in vlans:
+        if v.name == vlan:
             return True
     return False
 
@@ -100,9 +100,28 @@ async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     
+def get_cached_vlans():
+    cached_data = redis_client.get("vlans_data")
+    if not cached_data:
+        # print("🔴 Cache MISS: No vlan_data found in Redis")
+        return None
+    
+    parsed = json.loads(cached_data)
+    # print("🟢 Cache HIT (GET):", json.dumps(parsed, indent=2))
+    return parsed
+    
+
+def set_cached_vlans(data: dict):
+  redis_client.setex("vlans_data", 300, json.dumps(data))
+#   print("🟡 Cache UPDATED (SET):", json.dumps(data, indent=2))
 
 async def fetch_vlans():
     try:
+        cached_data = redis_client.get("vlans_data")
+        if cached_data:
+            print("Cache HIT")
+            return Vlan_Get_Response.model_validate(json.loads(cached_data))
+        
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.get(
                 f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
@@ -110,7 +129,8 @@ async def fetch_vlans():
             )
 
             response.raise_for_status()
-            return response.json()
+            redis_client.setex("vlans_data", 300, json.dumps(response.json()))  
+            return Vlan_Get_Response.model_validate(response.json())
         
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=str(e))  
@@ -131,6 +151,16 @@ async def post_vlans_service(request:Vlan_Post_Request):
                                       json=request.model_dump(by_alias=True))
             
             response.raise_for_status()
+
+            cache_data = get_cached_vlans() or {"sonic-vlan:sonic-vlan": {"VLAN": {"VLAN_LIST": []}, "VLAN_MEMBER": {"VLAN_MEMBER_LIST": []}}}
+
+            # Append VLAN(s)
+            cache_data["sonic-vlan:sonic-vlan"]["VLAN"]["VLAN_LIST"].extend([v.model_dump() for v in vlan_List])
+            if member_List:
+                cache_data["sonic-vlan:sonic-vlan"]["VLAN_MEMBER"]["VLAN_MEMBER_LIST"].extend([m.model_dump() for m in member_List])
+
+            set_cached_vlans(cache_data)
+
             return {
                 "status": response.status_code,
                 "message": "VLAN added successfully",
@@ -159,6 +189,42 @@ async def put_vlan_service(request:VlanWrapper):
             )
 
             response.raise_for_status()
+            cache_data = get_cached_vlans() or {
+                "sonic-vlan:sonic-vlan": {
+                    "VLAN": {"VLAN_LIST": []},
+                    "VLAN_MEMBER": {"VLAN_MEMBER_LIST": []},
+                }
+            }
+
+            # 🔹 Update VLAN(s) in cache
+            existing_vlans = cache_data["sonic-vlan:sonic-vlan"]["VLAN"]["VLAN_LIST"]
+            for new_vlan in vlan_List:
+                found = False
+                for idx, existing in enumerate(existing_vlans):
+                    if existing["vlanid"] == new_vlan.vlanid:  # match by vlanid
+                        existing_vlans[idx] = new_vlan.model_dump()  # replace with new one
+                        found = True
+                        break
+                if not found:
+                    existing_vlans.append(new_vlan.model_dump())  # add if not exists
+
+            # 🔹 Update VLAN members in cache
+            existing_members = cache_data["sonic-vlan:sonic-vlan"]["VLAN_MEMBER"]["VLAN_MEMBER_LIST"]
+            for new_member in member_List:
+                found = False
+                for idx, existing in enumerate(existing_members):
+                    if (
+                        existing["name"] == new_member.name
+                        and existing["ifname"] == new_member.ifname
+                    ):
+                        existing_members[idx] = new_member.model_dump()
+                        found = True
+                        break
+                if not found:
+                    existing_members.append(new_member.model_dump())
+
+            set_cached_vlans(cache_data)
+            
             return {
                 "status": response.status_code,
                 "message": "VLAN configuration updated",
@@ -205,6 +271,9 @@ async def delete_all_vlans_from_switch():
             response = await client.delete(f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan", headers=RESTCONF_HEADERS, timeout=10.0)
 
             response.raise_for_status()
+
+            set_cached_vlans({"sonic-vlan:sonic-vlan": {"VLAN": {"VLAN_LIST": []}, "VLAN_MEMBER": {"VLAN_MEMBER_LIST": []}}})
+
             return {"detail": "All VLANs deleted from switch successfully."}
 
     except httpx.HTTPStatusError as e:
@@ -224,6 +293,16 @@ async def delete_vlan_by_name(vlan_name: str):
             response = await client.delete(vlan_url, headers=RESTCONF_HEADERS,  timeout=10.0)
 
             response.raise_for_status()
+            # Update cache
+            cache_data = get_cached_vlans()
+            if cache_data:
+                vlans = cache_data["sonic-vlan:sonic-vlan"]["VLAN"]["VLAN_LIST"]
+                members = cache_data["sonic-vlan:sonic-vlan"]["VLAN_MEMBER"]["VLAN_MEMBER_LIST"]
+                
+                cache_data["sonic-vlan:sonic-vlan"]["VLAN"]["VLAN_LIST"] = [v for v in vlans if v["name"] != vlan_name]
+                cache_data["sonic-vlan:sonic-vlan"]["VLAN_MEMBER"]["VLAN_MEMBER_LIST"] = [m for m in members if m["name"] != vlan_name]
+
+                set_cached_vlans(cache_data)
             return {"detail": f"VLAN '{vlan_name}' successfully deleted from the switch."}
         
     except httpx.HTTPStatusError as e:

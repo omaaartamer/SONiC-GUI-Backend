@@ -1,28 +1,46 @@
-from fastapi import HTTPException
+import os
+import httpx
+import json
+import time
+from fastapi import HTTPException, Request
 from dotenv import load_dotenv
 from app.models.Port import PortSummary, Port_Oper_Response
-import httpx
-import os
+from app.redis_client import redis_client
 
 RESTCONF_HEADERS = {
     "Accept": "application/yang-data+json"
 }
 
-
 load_dotenv()
-
 SONIC_BASE_URL=os.getenv("SONIC_BASE_URL")
 
+async def sliding_window_rate_limiter(request: Request, function: str, limit: int = 10, window_size: int = 60):
+        client_id = request.client.host 
+        key = f"rate_limit:{client_id}:{function}"
+        current_time = int(time.time())
+        
+        redis_client.zremrangebyscore(key, 0, current_time - window_size)
+        
+        redis_client.zadd(key, {current_time: current_time})
+        
+        if redis_client.zcard(key) > limit: #how many requests has this client made in the current sliding window
+            raise HTTPException(status_code=429, detail="Too Many Requests")
 
 async def get_po_service():
     try:
+        cached = redis_client.get("port_oper")
+        if cached:
+            print("Cache HIT")
+            return Port_Oper_Response.model_validate(json.loads(cached))
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.get(
                 f"{SONIC_BASE_URL}/restconf/data/sonic-port-oper:sonic-port-oper",
                 headers=RESTCONF_HEADERS
             )
             response.raise_for_status()
-            return response.json()
+            redis_client.setex("port_oper", 300, json.dumps(response.json()))
+            return Port_Oper_Response.model_validate(response.json())
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -30,8 +48,7 @@ async def get_po_service():
 
 async def get_port_summary_service():
     try:
-        json_Port_data = await get_po_service()
-        response = Port_Oper_Response(**json_Port_data)
+        response = await get_po_service()
 
         ports = [
             PortSummary(

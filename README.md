@@ -12,6 +12,8 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - JWT authentication
 - RESTCONF client for SONiC communication
 - AsyncSSH – For CLI feature that connects directly to SONiC switch
+- Redis – For caching (Ports, VLANs) and rate limiting
+- TinyDB – Lightweight JSON-based storage for user data
 - GitHub Actions – CI/CD linting workflow
 
 ## Current Features
@@ -20,7 +22,9 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - Vlan CRUD Operations
 - Port Operational Status Retrieval
 - Cli feature
-
+- Redis cache for Vlans and Port Operations
+- Rate Limiting
+  
 ## Getting Started
 
 ### Prerequisites
@@ -46,13 +50,16 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
    ```
 - Update the .env file with your values
    
-   
-5. **Install Dependencies**
+4. **Install Dependencies**
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
 
-6. **Run the Application**
+5. **Run the Application**
    ```bash
    uvicorn app.main:app --reload
-
+   
+6. **Install and run Redis (default port `6379`):**
+   ```bash
+   redis-server
+   ```
