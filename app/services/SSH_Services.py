@@ -75,6 +75,78 @@ def parse_free_output(output: str):
         
     raise ValueError("Mem value not found in output")
 
+
+def parse_fan_output(cli_output: str):
+    fans = []
+    lines = cli_output.strip().splitlines()
+    
+    # Find the section after "show platform fan"
+    start_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("Drawer"):
+            start_idx = i + 1
+            break
+    
+    if start_idx is None:
+        return fans  # no data found
+    
+    # Parse the fan lines
+    for line in lines[start_idx:]:
+        parts = re.split(r"\s{2,}", line.strip())  # split by 2+ spaces
+        if len(parts) < 7:
+            continue
+        fan = {
+            # "drawer": parts[0],
+            # "led": parts[1],
+            "fan": parts[2],
+            # "speed": parts[3],
+            # "direction": parts[4],
+            "presence": parts[5],
+            "status": parts[6],
+            # "timestamp": parts[7] if len(parts) > 7 else None,
+        }
+        fans.append(fan)
+    
+    return fans
+
+import re
+
+def parse_psu_output(cli_output: str):
+    psus = []
+    lines = cli_output.strip().splitlines()
+
+    # Find the section after "PSU"
+    start_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("PSU"):
+            start_idx = i + 1
+            break
+
+    if start_idx is None:
+        return psus  # no data found
+
+    # Parse PSU lines
+    for line in lines[start_idx:]:
+        parts = re.split(r"\s{2,}", line.strip())  # split by 2+ spaces
+        if len(parts) < 8:
+            continue
+
+        psu = {
+            "psu": parts[0],        # PSU1 / PSU2
+            # "model": parts[1],      # YM-1401A
+            # "serial": parts[2],     # serial number
+            # "hw_rev": parts[3],     # N/A
+            "voltage_v": parts[4],  # Voltage (V)
+            # "current_a": parts[5],  # Current (A)
+            # "power_w": parts[6],    # Power (W)
+            "status": parts[7],     # OK / NOT OK
+            # "led": parts[8] if len(parts) > 8 else None,  # green / red
+        }
+        psus.append(psu)
+
+    return psus
+
+
 async def switch_status(websocket: WebSocket, username: str):
 
     await websocket.accept()
@@ -94,9 +166,20 @@ async def switch_status(websocket: WebSocket, username: str):
                 mem_percentage = parse_free_output(memory_result)
                 # print("inside switch status mem perc = ", mem_percentage)
 
+                 # Fans
+                fan_result = await run_command(conn, "show platform fan")
+                fans = parse_fan_output(fan_result)
+
+                # PSUs
+                psu_result = await run_command(conn, "show platform psustatus")
+                psus = parse_psu_output(psu_result)
+
                 await websocket.send_json({
                     "cpu_used_percent": cpu_usage_percentage,
-                    "memory_used_percent": mem_percentage
+                    "memory_used_percent": mem_percentage,
+                    "fans": fans,
+                    "psus": psus
+
                 })
 
                 await asyncio.sleep(2)
