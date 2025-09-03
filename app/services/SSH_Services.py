@@ -145,6 +145,37 @@ def parse_psu_output(cli_output: str):
 
     return psus
 
+def parse_temperature_output(cli_output: str):
+    temperatures = []
+    lines = cli_output.strip().splitlines()
+
+    # Find the section after the header, assuming the header line starts with "Sensor".
+    start_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("Sensor"):
+            start_idx = i + 1
+            break
+    
+    if start_idx is None:
+        return temperatures  # No data found
+
+    # Parse the temperature sensor lines
+    for line in lines[start_idx:]:
+        parts = re.split(r"\s{2,}", line.strip())  # Split by 2 or more spaces
+        
+        # Ensure the line has enough parts to be a valid sensor entry.
+        # We expect at least Sensor, Temperature (C), and Status.
+        if len(parts) < 5:
+            continue
+            
+        sensor = {
+            "sensor": parts[0],
+            "temperature_celsius": parts[2],
+            "status": parts[4],
+        }
+        temperatures.append(sensor)
+    
+    return temperatures
 
 async def switch_status(websocket: WebSocket, username: str):
 
@@ -173,11 +204,16 @@ async def switch_status(websocket: WebSocket, username: str):
                 psu_result = await run_command(conn, "show platform psustatus")
                 psus = parse_psu_output(psu_result)
 
+                # Temperature
+                temp_result = await run_command(conn, "show platform temperature")
+                temp = parse_psu_output(temp_result)
+
                 await websocket.send_json({
                     "cpu_used_percent": cpu_usage_percentage,
                     "memory_used_percent": mem_percentage,
                     "fans": fans,
-                    "psus": psus
+                    "psus": psus,
+                    "temp":temp
 
                 })
 
