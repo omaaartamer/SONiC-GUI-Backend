@@ -38,6 +38,35 @@ async def read_from_ws(process, websocket):
     except asyncio.CancelledError:
         pass
 
+
+async def handle_ssh_session(websocket: WebSocket, username: str):
+    await websocket.accept()
+    conn = ssh_sessions.get(username)
+
+    if not conn:
+        await websocket.send_json({"error": "No active SSH session"})
+        await websocket.close()
+        return
+
+    try:
+        process = await conn.create_process(term_type="xterm")
+
+        read_ssh = asyncio.create_task(read_from_ssh(process, websocket))
+        read_ws = asyncio.create_task(read_from_ws(process, websocket))
+
+        done, pending = await asyncio.wait(
+            [read_ssh, read_ws],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        for task in pending:
+            task.cancel()
+
+    except Exception as e:
+        if websocket.application_state == WebSocketState.CONNECTED:
+            await websocket.send_json({"error": str(e)})
+
+
 async def run_command(conn, command: str):
     try:
         result = await conn.run(command)
@@ -197,17 +226,45 @@ async def switch_status(websocket: WebSocket, username: str):
                 # print("inside switch status mem perc = ", mem_percentage)
 
                  # Fans
-                fan_result = await run_command(conn, "show platform fan")
-                fans = parse_fan_output(fan_result)
+                # fan_result = await run_command(conn, "show platform fan")
+                # fans = parse_fan_output(fan_result)
 
-                # PSUs
-                psu_result = await run_command(conn, "show platform psustatus")
-                psus = parse_psu_output(psu_result)
+                # # PSUs
+                # psu_result = await run_command(conn, "show platform psustatus")
+                # psus = parse_psu_output(psu_result)
 
-                # Temperature
-                temp_result = await run_command(conn, "show platform temperature")
-                temp = parse_psu_output(temp_result)
+                # # Temperature
+                # temp_result = await run_command(conn, "show platform temperature")
+                # temp = parse_psu_output(temp_result)
 
+                fans = {
+                    {"FAN": "FAN-1F","Speed": "40%"},
+                    {"FAN": "FAN-1R","Speed": "40%"},
+                    {"FAN": "FAN-2F","Speed": "40%"},
+                    {"FAN": "FAN-2R","Speed": "40%"},
+                    {"FAN": "FAN-3F","Speed": "40%"},
+                    {"FAN": "FAN-3R","Speed": "40%"},
+                    {"FAN": "FAN-4F","Speed": "40%"},
+                    {"FAN": "FAN-4R","Speed": "40%"},
+                    {"FAN": "FAN-5F","Speed": "40%"},
+                    {"FAN": "FAN-5R","Speed": "40%"},
+                    {"FAN": "PSU-1 FAN-1","Speed": "14%"},
+                    {"FAN": "PSU-2 FAN-1","Speed": "0%"},
+                }
+
+                psus = {
+                    {"PSU": "PSU 1", "Power": "79.00", "Status": "OK", "LED": "green"},
+                    {"PSU": "PSU 2", "Power": "0.00", "Status": "NOT OK", "LED": "red"}
+                }
+
+                temp = {
+                    {"Sensor": "PSU-1 temp sensor 1", "Temperature": "31"},
+                    {"Sensor": "PSU-2 temp sensor 2", "Temperature": "23"},
+                    {"Sensor": "Temp sensor 1", "Temperature": "31.5"},
+                    {"Sensor": "Temp sensor 2", "Temperature": "23.5"},
+                    {"Sensor": "Temp sensor 3", "Temperature": "24.5"},
+                    {"Sensor": "Temp sensor 4", "Temperature": "24"}
+                }
                 await websocket.send_json({
                     "cpu_used_percent": cpu_usage_percentage,
                     "memory_used_percent": mem_percentage,
@@ -224,32 +281,3 @@ async def switch_status(websocket: WebSocket, username: str):
 
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
-
-
-
-async def handle_ssh_session(websocket: WebSocket, username: str):
-    await websocket.accept()
-    conn = ssh_sessions.get(username)
-
-    if not conn:
-        await websocket.send_json({"error": "No active SSH session"})
-        await websocket.close()
-        return
-
-    try:
-        process = await conn.create_process(term_type="xterm")
-
-        read_ssh = asyncio.create_task(read_from_ssh(process, websocket))
-        read_ws = asyncio.create_task(read_from_ws(process, websocket))
-
-        done, pending = await asyncio.wait(
-            [read_ssh, read_ws],
-            return_when=asyncio.FIRST_COMPLETED
-        )
-
-        for task in pending:
-            task.cancel()
-
-    except Exception as e:
-        if websocket.application_state == WebSocketState.CONNECTED:
-            await websocket.send_json({"error": str(e)})
