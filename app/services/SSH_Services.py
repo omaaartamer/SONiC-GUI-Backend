@@ -109,7 +109,6 @@ def parse_fan_output(cli_output: str):
     
     return fans
 
-import re
 
 def parse_psu_output(cli_output: str):
     psus = []
