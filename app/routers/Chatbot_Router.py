@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Websocket
+from fastapi import APIRouter, WebSocket
 from app.services.Chatbot_Services import chatbot_service
 
 router = APIRouter()
-@router.post("/")
-async def chatbot(websocket : Websocket, username : str, temp : str):
-    return await chatbot_service(websocket, username)
+
+@router.websocket("/chat/{username}")
+async def chatbot(websocket: WebSocket, username: str):
+    await chatbot_service(websocket, username)

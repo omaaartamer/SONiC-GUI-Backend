@@ -1,5 +1,5 @@
 import os
-from fastapi import Websocket
+from fastapi import WebSocket
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
@@ -18,13 +18,22 @@ llm = ChatGoogleGenerativeAI(
         api_key=os.getenv("GOOGLE_API_KEY"),
         transport='rest'
     )
-async def chatbot_service(websocket : Websocket, username : str, temp : str):
+async def chatbot_service(websocket: WebSocket, username: str):
     await websocket.accept()
-    # conn = ssh_sessions.get(username)#if using cli
+    print("i am here")
+    try:
+        while True:
+            # Receive a message from frontend
+            data = await websocket.receive_text()
+            print("after send")
+            # Pass to LLM / tools
+            response = await getVlans.ainvoke(data)
 
-    response = await getVlans.ainvoke(temp)
-    print("answer:\n", response)
-    return response
+            # Send back to frontend
+            await websocket.send_text(str(response))
+    except Exception as e:
+        await websocket.close()
+
 
 
 
