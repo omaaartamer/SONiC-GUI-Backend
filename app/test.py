@@ -1,23 +1,43 @@
+from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+import os
 
+# Load environment variables (if needed for other things)
+load_dotenv()
 
-loader = TextLoader(r"E:\Orange\SONiC-GUI\SONiC-GUI-Backend\app\documentation.txt", encoding="utf-8")
-documents = loader.load()
+# Define path where Chroma DB will be saved
+PERSIST_DIR = "app/db/chroma_db" #delete chroma_db file whenever the documentation.txt file changes so it can be automatically recreated
 
-
-text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-texts = text_splitter.split_documents(documents)
-
-
+# Use HuggingFace embeddings (no API key required)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-db = Chroma.from_documents(texts, embeddings)
+if not os.path.exists(PERSIST_DIR):
+    print("⚡ Creating new Chroma DB...")
 
-query = "What is this document about?"
-docs = db.similarity_search(query)
+# Load documents
+    loader = TextLoader("app/documentation.txt",encoding="utf-8")
+    documents = loader.load()
 
-print("Most relevant chunk:\n", docs[0].page_content)
+# Split documents into smaller chunks
+    text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    texts = text_splitter.split_documents(documents)
+
+# Create & persist DB
+    db = Chroma.from_documents(texts, embeddings, persist_directory=PERSIST_DIR)
+    db.persist()   # save to disk
+
+else:
+    print("⚡ Loading existing Chroma DB...")
+    db = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
+
+# # Create Chroma database
+# db = Chroma.from_documents(texts, embeddings)
+
+# Perform a similarity search
+query = "What is the command to show vlans?"
+docs = db.similarity_search(query, k=2)
+
+print("🔍 Result:", docs[0].page_content[:500])

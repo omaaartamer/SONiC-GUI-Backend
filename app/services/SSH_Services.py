@@ -219,11 +219,11 @@ async def switch_status(websocket: WebSocket, username: str):
             while True:
                 cpu_result = await run_command(conn, "top -b -n 1")
                 cpu_usage_percentage = parse_top_output(cpu_result)
-                # print("inside switch status cpu = ", cpu_usage_percentage)
+                print("inside switch status cpu = ", cpu_usage_percentage)
 
                 memory_result = await run_command(conn, "free -h")
                 mem_percentage = parse_free_output(memory_result)
-                # print("inside switch status mem perc = ", mem_percentage)
+                print("inside switch status mem perc = ", mem_percentage)
 
                 #  Fans
                 # fan_result = await run_command(conn, "show platform fan")
