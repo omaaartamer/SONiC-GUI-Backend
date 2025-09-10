@@ -4,7 +4,7 @@ from app.routers.Auth_Router import router as auth_router
 from app.routers.Vlans_Router import router as vlans_router
 from app.routers.Port_Oper_Router import router as port_op_router
 from app.routers.SSH_Router import router as ssh_router
-from app.routers.Chatbot import router as chatbot_router
+from app.routers.Chatbot_Router import router as chatbot_router
 from app.core.Security import get_current_user
 
 

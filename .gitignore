@@ -6,6 +6,5 @@ __pycache__/
 venv/
 .env
 
-key.pem
-cert.pem
 db.json
+documentation.txt
