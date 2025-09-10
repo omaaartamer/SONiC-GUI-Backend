@@ -8,3 +8,4 @@ venv/
 .env
 
 db.json
+/app/db/chroma_db/
