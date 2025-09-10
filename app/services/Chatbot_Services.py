@@ -31,7 +31,7 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             # Send back to frontend
             await websocket.send_text(str(response))
-    except Exception as e:
+    except Exception:
         await websocket.close()
 
 
