@@ -1,6 +1,7 @@
 # Ignore Python cache
 __pycache__/
 *.pyc
+chroma_db/
 
 # Ignore virtual environments
 venv/
