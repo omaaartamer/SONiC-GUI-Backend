@@ -89,6 +89,11 @@ def preprocess_input(text: str):
 # ✅ WebSocket chatbot service
 async def chatbot_service(websocket: WebSocket, username: str):
     await websocket.accept()
+
+    
+    # 🧠 Session memory (all exchanges until disconnect)
+    conversation_history = []
+
     try:
         while True:
             user_input = await websocket.receive_text()
@@ -98,15 +103,26 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             clean_input = preprocess_input(user_input)
 
+             # Save user input
+            conversation_history.append({"role": "user", "content": clean_input})
+
             # Search in your vector DB
             results = db.similarity_search(clean_input, k=3)
             context = "\n\n".join([doc.page_content for doc in results])
+
+            # Include full memory
+            memory_context = "\n".join(
+                [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
+            )
 
             final_prompt = f"""
                 You are a helpful assistant. Use the following SONiC Switch documentation to answer the question.
 
                 Context:
                 {context}
+
+                Conversation so far:
+                {memory_context}
 
                 Question:
                 {clean_input}
@@ -115,6 +131,10 @@ async def chatbot_service(websocket: WebSocket, username: str):
                 """
 
             response = llm.invoke(final_prompt)
+
+             # Save assistant reply
+            conversation_history.append({"role": "assistant", "content": response.content})
+            
             await websocket.send_text(response.content)
 
     except Exception as e:
