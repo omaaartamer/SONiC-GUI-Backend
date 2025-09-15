@@ -2,7 +2,7 @@ import os
 import re
 from fastapi import WebSocket
 from dotenv import load_dotenv
-from spellchecker import SpellChecker
+# from spellchecker import SpellChecker
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 # from langchain_core.tools import tool
@@ -11,7 +11,7 @@ from app.embeddings import db
 # from app.services.SSH_Services import ssh_sessions
 
 load_dotenv()
-spell = SpellChecker()
+# spell = SpellChecker()
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # @tool(description = "get the vlans")
@@ -25,13 +25,13 @@ llm = ChatGoogleGenerativeAI(
     )
 
 
-def correct_spelling(text: str) -> str:
-    words = text.split()
-    corrected_sentence = []
-    for word in words:
-        correction = spell.correction(word)
-        corrected_sentence.append(correction if correction else word)
-    return " ".join(corrected_sentence)
+# def correct_spelling(text: str) -> str:
+#     words = text.split()
+#     corrected_sentence = []
+#     for word in words:
+#         correction = spell.correction(word)
+#         corrected_sentence.append(correction if correction else word)
+#     return " ".join(corrected_sentence)
 
 def preprocess_input(text : str):
     text = re.sub(r"\s+", " ", text).strip()
@@ -61,7 +61,7 @@ async def chatbot_service(websocket: WebSocket, username: str):
                 Answer:
                 """
             response = llm.invoke(final_prompt)
-            await websocket.send_text(str(response))
+            await websocket.send_text(response.content)
 
     except Exception:
         await websocket.close()
