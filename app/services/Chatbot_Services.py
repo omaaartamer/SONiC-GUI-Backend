@@ -1,15 +1,18 @@
 import os
 import re
+import asyncio
 from fastapi import WebSocket
 from dotenv import load_dotenv
-from spellchecker import SpellChecker   # ✅ enable spellchecker
+from spellchecker import SpellChecker
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_huggingface import HuggingFaceEmbeddings
-from app.embeddings import db   # your vector DB wrapper
+from app.embeddings import db
+from langchain.agents import Tool
+from app.services.SSH_Services import run_command
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",
@@ -17,10 +20,8 @@ llm = ChatGoogleGenerativeAI(
     transport="rest",
 )
 
-# ✅ Initialize spell checker
 spell = SpellChecker()
 
-# ✅ Lazy SONiC vocabulary loader
 _sonic_vocab_loaded = False
 def load_sonic_vocab():
     global _sonic_vocab_loaded
@@ -79,63 +80,149 @@ def correct_spelling(text: str) -> str:
 
 
 
-# ✅ Preprocessing: clean + lowercase + correct spelling
 def preprocess_input(text: str):
     text = re.sub(r"\s+", " ", text).strip().lower()
     text = correct_spelling(text)
     return text
 
 
-# ✅ WebSocket chatbot service
+
+prompt = ChatPromptTemplate.from_template("""
+You are a helpful assistant with access to tools.
+If the user asks about a command or has an unclear query, use `search_sonic` to look it up. if he asks for a command send it without any additions.
+You must NEVER write `OBSERVATION:` yourself.
+Only the system (outside you) will fill that in.
+If you decide on an ACTION, stop your response right after writing `INPUT:`.
+Do not write OBSERVATION or FINAL yet.
+                                                                             
+Available tools:
+- search_sonic: Search SONiC documentation for relevant info.
+
+Follow this format:
+THOUGHT: your reasoning
+ACTION: the tool to use (if needed)
+INPUT: the input for the tool
+OBSERVATION: (this will be filled in later by the system, do NOT write this yourself)
+FINAL: the final answer to the user
+
+User question: {input}
+""")
+
+chain = prompt | llm | StrOutputParser()
+
+def search_sonic(query: str) -> str:
+    """
+    Search SONiC documentation for relevant info.
+    Input: user query (string).
+    Output: top matching result as a string.
+    """
+    results = db.similarity_search(query, k = 3)
+    context = "\n\n".join([doc.page_content for doc in results])
+    print("context in search docs: \n" ,context)
+    return context
+# Sync wrapper for LangChain
+def make_run_command_tool(conn, loop):
+    def sync_run(command: str) -> str:
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                run_command(conn, command), loop
+            )
+            return future.result()
+        except Exception as e:
+            return f"Error executing command: {e}"
+    return sync_run
+tools = [
+        # Tool(
+            # name="execute_command",
+            # func=run_with_conn,
+            # description="Run SONiC CLI commands via SSH. Input should be a valid SONiC CLI command."
+            # ),
+        Tool(
+        name="search_sonic",
+        func=search_sonic,
+        description="Search the SONiC documentation or database for the best matching command when the query is unclear."
+        )
+    ]
+tool_map = {t.name: t.func for t in tools}
+
+async def run_agent(user_input: str, max_steps: int = 5):
+    context = f"User asked: {user_input}"
+    for step in range(max_steps):
+        response = await chain.ainvoke({"input": context})
+        print(f"\n=== Step {step+1} ===\n{response}\n")
+
+        if "FINAL:" in response:
+            return response.split("FINAL:", 1)[1].strip()
+
+        if "ACTION:" in response and "INPUT:" in response:
+            lines = response.splitlines()
+            action_line = next((l for l in lines if l.startswith("ACTION:")), None)
+            input_line = next((l for l in lines if l.startswith("INPUT:")), None)
+
+            tool_name = action_line.split(":", 1)[1].strip() if action_line else None
+            tool_input = input_line.split(":", 1)[1].strip() if input_line else None
+
+            if tool_name in tool_map:
+                print(f"Invoking tool: {tool_name} with input: {tool_input}")
+
+                result = tool_map[tool_name](tool_input)
+                context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+            else:
+                context += f"\nOBSERVATION: Unknown tool {tool_name}"
+        else:
+            return f"Agent stopped early: {response}"
+
+    return "Reached max steps without final answer."
+
+
 async def chatbot_service(websocket: WebSocket, username: str):
     await websocket.accept()
-
+    # conn = ssh_sessions.get(username)
+    # if not conn:
+    #     await websocket.send_json({"No active SSH session"})
+    #     await websocket.close()
+    #     return
     
-    # 🧠 Session memory (all exchanges until disconnect)
+    # loop = asyncio.get_running_loop()             # current FastAPI event loop
+    # run_with_conn = make_run_command_tool(conn, loop)   # bind conn to tool
+    
     conversation_history = []
 
     try:
         while True:
             user_input = await websocket.receive_text()
 
-            # ✅ Ensure SONiC vocab is loaded (only once)
             load_sonic_vocab()
 
             clean_input = preprocess_input(user_input)
 
-             # Save user input
             conversation_history.append({"role": "user", "content": clean_input})
 
-            # Search in your vector DB
-            results = db.similarity_search(clean_input, k=3)
-            context = "\n\n".join([doc.page_content for doc in results])
-
-            # Include full memory
             memory_context = "\n".join(
                 [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
             )
 
-            final_prompt = f"""
-                You are a helpful assistant. Use the following SONiC Switch documentation to answer the question.
+            # final_prompt = f"""
+            #     You are a helpful assistant. Use the following SONiC Switch documentation to answer the question.
 
-                Context:
-                {context}
+            #     Context:
+            #     {context}
 
-                Conversation so far:
-                {memory_context}
+            #     Conversation so far:
+            #     {memory_context}
 
-                Question:
-                {clean_input}
+            #     Question:
+            #     {clean_input}
 
-                Answer:
-                """
+            #     Answer:
+            #     """
 
-            response = llm.invoke(final_prompt)
+            # response = llm.invoke(final_prompt)
+            response = await run_agent(clean_input)
 
-             # Save assistant reply
-            conversation_history.append({"role": "assistant", "content": response.content})
+            conversation_history.append({"role": "assistant", "content": response})
             
-            await websocket.send_text(response.content)
+            await websocket.send_text(response)
 
     except Exception as e:
         print("⚠️ Chatbot crashed with error:", e)
