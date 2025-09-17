@@ -105,9 +105,7 @@ INPUT: the input for the tool
 OBSERVATION: (this will be filled in later by the system, do NOT write this yourself)
 FINAL: the final answer to the user
 
-User question: {input}
-""")
-
+User question: {input}""")
 chain = prompt | llm | StrOutputParser()
 
 def search_sonic(query: str) -> str:
@@ -156,8 +154,8 @@ async def run_agent(user_input: str, max_steps: int = 5):
 
         if "ACTION:" in response and "INPUT:" in response:
             lines = response.splitlines()
-            action_line = next((l for l in lines if l.startswith("ACTION:")), None)
-            input_line = next((l for l in lines if l.startswith("INPUT:")), None)
+            action_line = next((line for line in lines if line.startswith("ACTION:")), None)
+            input_line = next((line for line in lines if line.startswith("INPUT:")), None)
 
             tool_name = action_line.split(":", 1)[1].strip() if action_line else None
             tool_input = input_line.split(":", 1)[1].strip() if input_line else None
