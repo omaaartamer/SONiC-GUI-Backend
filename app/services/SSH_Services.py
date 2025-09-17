@@ -219,24 +219,52 @@ async def switch_status(websocket: WebSocket, username: str):
             while True:
                 cpu_result = await run_command(conn, "top -b -n 1")
                 cpu_usage_percentage = parse_top_output(cpu_result)
-                print("inside switch status cpu = ", cpu_usage_percentage)
+                # print("inside switch status cpu = ", cpu_usage_percentage)
 
                 memory_result = await run_command(conn, "free -h")
                 mem_percentage = parse_free_output(memory_result)
-                print("inside switch status mem perc = ", mem_percentage)
+                # print("inside switch status mem perc = ", mem_percentage)
 
-                 # Fans
-                fan_result = await run_command(conn, "show platform fan")
-                fans = parse_fan_output(fan_result)
+                #  Fans
+                # fan_result = await run_command(conn, "show platform fan")
+                # fans = parse_fan_output(fan_result)
 
-                # PSUs
-                psu_result = await run_command(conn, "show platform psustatus")
-                psus = parse_psu_output(psu_result)
+                # # PSUs
+                # psu_result = await run_command(conn, "show platform psustatus")
+                # psus = parse_psu_output(psu_result)
 
-                # Temperature
-                temp_result = await run_command(conn, "show platform temperature")
-                temp = parse_psu_output(temp_result)
+                # # Temperature
+                # temp_result = await run_command(conn, "show platform temperature")
+                # temp = parse_psu_output(temp_result)
 
+                fans = {
+                    "FAN-1F":"40%",
+                    "FAN-1R": "40%",
+                    "FAN-2F": "40%",
+                    "FAN-2R": "40%",
+                    "FAN-3F": "40%",
+                    "FAN-3R": "40%",
+                    "FAN-4F": "40%",
+                    "FAN-4R": "40%",
+                    "FAN-5F": "40%",
+                    "FAN-5R": "40%",
+                    "PSU-1 FAN-1": "14%",
+                    "PSU-2 FAN-1": "0%"
+                }
+
+                psus = {
+                    "PSU 1":{"Power": "79.00", "Status": "OK", "LED": "green"},
+                    "PSU 2":{"Power": "0.00", "Status": "NOT OK", "LED": "red"}
+                }
+
+                temp = {
+                    "PSU-1 temp sensor 1":"31",
+                    "PSU-2 temp sensor 2":"23",
+                    "Temp sensor 1":"31.5",
+                    "Temp sensor 2":"23.5",
+                    "Temp sensor 3":"24.5",
+                    "Temp sensor 4":"24"
+                }
                 await websocket.send_json({
                     "cpu_used_percent": cpu_usage_percentage,
                     "memory_used_percent": mem_percentage,
