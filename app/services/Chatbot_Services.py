@@ -92,7 +92,7 @@ You must NEVER write `OBSERVATION:` yourself.
 Only the system (outside you) will fill that in.
 If you decide on an ACTION, stop your response right after writing `INPUT:`.
 Do not write OBSERVATION or FINAL yet.
-                                                                             
+
 Available tools:
 - search_sonic: Search SONiC documentation for relevant info.
 
@@ -178,10 +178,10 @@ async def chatbot_service(websocket: WebSocket, username: str):
     #     await websocket.send_json({"No active SSH session"})
     #     await websocket.close()
     #     return
-    
+
     # loop = asyncio.get_running_loop()             # current FastAPI event loop
     # run_with_conn = make_run_command_tool(conn, loop)   # bind conn to tool
-    
+
     conversation_history = []
 
     try:
@@ -217,7 +217,7 @@ async def chatbot_service(websocket: WebSocket, username: str):
             response = await run_agent(clean_input)
 
             conversation_history.append({"role": "assistant", "content": response})
-            
+
             await websocket.send_text(response)
 
     except Exception as e:
