@@ -198,9 +198,9 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             conversation_history.append({"role": "user", "content": clean_input})
 
-            memory_context = "\n".join(
-                [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
-            )
+            # memory_context = "\n".join(
+            #     [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
+            # )
 
             # final_prompt = f"""
             #     You are a helpful assistant. Use the following SONiC Switch documentation to answer the question.
