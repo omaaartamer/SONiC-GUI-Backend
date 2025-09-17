@@ -1,16 +1,16 @@
 import os
 import re
-import asyncio
+import inspect
 from fastapi import WebSocket
 from dotenv import load_dotenv
 from spellchecker import SpellChecker
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.embeddings import db
-from langchain.agents import Tool, initialize_agent
+from langchain.agents import Tool
 from app.services.SSH_Services import run_command, ssh_sessions
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-import inspect
+
 
 load_dotenv()
 
@@ -98,7 +98,8 @@ Do not write OBSERVATION or FINAL yet.
                                                                              
 Available tools:
 - search_sonic: Search SONiC documentation for relevant info.
--execute_command: Run SONiC CLI commands if user asks you to execute them only via SSH. Input should be a valid SONiC CLI command.
+- execute_command: Run SONiC CLI commands if user asks you to execute them only via SSH. Input should be a valid SONiC CLI command.
+
 Follow this format:
 THOUGHT: your reasoning
 ACTION: the tool to use (if needed)
@@ -121,21 +122,16 @@ def search_sonic(query: str) -> str:
     context = "\n\n".join([doc.page_content for doc in results])
     print("context in search docs: \n" ,context)
     return context
-# # Sync wrapper for LangChain
+
+
 def make_run_command_tool(conn):
     async def run_with_conn(command: str) -> str:
         try:
             result = await run_command(conn, command)
             return result
         except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            print(f"⚠️ Error in run_with_conn:\n{tb}")
             return f"Error executing command: {repr(e)}"
     return run_with_conn
-
-
-
 
 
 async def invoke_tool(tool_func, tool_input):
@@ -153,7 +149,8 @@ async def chatbot_service(websocket: WebSocket, username: str):
         await websocket.close()
         return
     
-    run_with_conn = make_run_command_tool(conn)   # bind conn to tool
+    run_with_conn = make_run_command_tool(conn)
+
     tools = [
         Tool(
             name="execute_command",
@@ -166,16 +163,15 @@ async def chatbot_service(websocket: WebSocket, username: str):
         description="Search the SONiC documentation or database for the best matching command when the query is unclear."
         )
     ]
+
     tool_map = {t.name: t.func for t in tools}
 
     async def run_agent(user_input: str, max_steps: int = 5):
         context = f"User asked: {user_input}"
 
         for step in range(max_steps):
-            # Explicit REST call to Gemini
-            messages = prompt.format_messages(input=context)
-            response_obj = llm.invoke(messages)   # always rest transport
-            response = response_obj.content if hasattr(response_obj, "content") else str(response_obj)
+
+            response = chain.invoke({"input": context})
 
             print(f"\n=== Step {step+1} ===\n{response}\n")
 
@@ -223,28 +219,13 @@ async def chatbot_service(websocket: WebSocket, username: str):
             load_sonic_vocab()
 
             clean_input = preprocess_input(user_input)
-            # results = db.similarity_search(clean_input, k = 3)
-            # context = "\n\n".join([doc.page_content for doc in results])
+
             conversation_history.append({"role": "user", "content": clean_input})
 
-            memory_context = "\n".join(
-                [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
-            )
+            # memory_context = "\n".join(
+            #     [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history]
+            # )
 
-            # final_prompt = f"""
-            #     You are a helpful assistant. Use the following SONiC Switch documentation to answer the question.
-
-            #     Context:
-            #     {context}
-
-            #     Conversation so far:
-            #     {memory_context}
-
-            #     Question:
-            #     {clean_input}
-
-            #     Answer:
-            #     """
 
             # response =  llm.invoke(final_prompt)
             response = await run_agent(clean_input)
