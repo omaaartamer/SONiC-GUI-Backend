@@ -85,8 +85,6 @@ def preprocess_input(text: str):
     text = correct_spelling(text)
     return text
 
-
-
 prompt = ChatPromptTemplate.from_template("""
 You are a helpful assistant with access to tools.
 If the user asks about a command or has an unclear query, use `search_sonic` to look it up. if he asks for a command send it without any additions.
