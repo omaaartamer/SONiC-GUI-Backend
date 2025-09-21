@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field, model_validator
 class Vlan(BaseModel):
     name: str
     vlanid: int
-    description: Optional[str]
-    mac_learning: Literal["enabled", "disabled"]
+    description: Optional[str] = None
+    mac_learning: Optional[Literal["enabled", "disabled"]] = "enabled"
 
 class Vlan_memberList(BaseModel):
     name: str
