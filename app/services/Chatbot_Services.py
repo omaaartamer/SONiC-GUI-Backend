@@ -182,8 +182,9 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             if "ACTION:" in response and "INPUT:" in response:
                 lines = response.splitlines()
-                action_line = next((l for l in lines if l.startswith("ACTION:")), None)
-                input_line = next((l for l in lines if l.startswith("INPUT:")), None)
+                action_line = next((line for line in lines if line.startswith("ACTION:")), None)
+                input_line = next((line for line in lines if line.startswith("INPUT:")), None)
+
 
                 tool_name = action_line.split(":", 1)[1].strip() if action_line else None
                 tool_input = input_line.split(":", 1)[1].strip() if input_line else None
