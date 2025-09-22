@@ -98,7 +98,6 @@ if the user asks what is the command for something return it with no additions u
 if the command can't be executed for some reason return it, or if you don't know the reason it failed search the sonic for what the command needs for it to succeed maybe the user needs to send additional info ask him to provide you with it.
 You must NEVER write `OBSERVATION:` yourself.
 Only the system (outside you) will fill that in.
-If you decide on an ACTION, stop your response right after writing `INPUT:` 
 Do not write OBSERVATION or FINAL yet.
 if user asks for multiple actions, execute them sequentially, with its own ACTION/INPUT/OBSERVATION/FINAL
 if multiple actions don't fill the FINAL yet until all actions are done
@@ -216,7 +215,6 @@ async def chatbot_service(websocket: WebSocket, username: str):
         ])
 
         context = f"User asked: {user_input}"
-
         for step in range(max_steps):
             response = chain.invoke({"input": context, "conv_history": conv_history})
             print(f"\n=== Step {step+1} ===\n{response}\n")
@@ -230,13 +228,9 @@ async def chatbot_service(websocket: WebSocket, username: str):
                 )
 
                 if actions:
-                    for i in actions:
-                        print("i:" , i)
                     for tool_name, tool_input in actions:
                         tool_name = tool_name.strip()
                         tool_input = tool_input.strip()
-                        print("tool_name", tool_name)
-                        print("tool_input", tool_input)
                         if tool_name in tool_map:
                             print(f"Invoking tool: {tool_name} with input: {tool_input}")
                             result = await invoke_tool(tool_map[tool_name], tool_input)
@@ -260,8 +254,7 @@ async def chatbot_service(websocket: WebSocket, username: str):
                     for tool_name, tool_input in actions:
                         tool_name = tool_name.strip()
                         tool_input = tool_input.strip()
-                        print("tool_name", tool_name)
-                        print("tool_input", tool_input)
+
                         if tool_name in tool_map:
                             print(f"Invoking tool: {tool_name} with input: {tool_input}")
                             result = await invoke_tool(tool_map[tool_name], tool_input)
