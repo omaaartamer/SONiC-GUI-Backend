@@ -11,11 +11,13 @@ from app.services.SSH_Services import run_command, ssh_sessions
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 # from langchain.agents import initialize_agent, AgentExecutor
+from collections import deque
 
+history = deque(maxlen=5) 
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite",
+    model="gemini-2.5-flash",
     api_key=os.getenv("GOOGLE_API_KEY"),
     transport="rest"
 )
@@ -88,7 +90,8 @@ def preprocess_input(text: str):
 
 
 prompt = ChatPromptTemplate.from_template("""
-You are a helpful assistant for Sonic Switch with access to tools.
+You are a helpful assistant for Sonic Switch with access to toolsFollow this format:
+
 If the user asks about a command or has an unclear query, use `search_sonic` to look it up.
 If the user provides a valid CLI command or asks you to execute one, run it with `execute_command` type in it the command exactly as returned from the sonic documentation with no additions and return the output if there is one.
 if the user asks what is the command for something return it with no additions unless the command needs specific args you can specify them and don't execute it unless his query asks you to after you understand what command he wants by using search_sonic tool.
@@ -99,19 +102,19 @@ If you decide on an ACTION, stop your response right after writing `INPUT:`
 Do not write OBSERVATION or FINAL yet.
 if user asks for multiple actions, execute them sequentially, with its own ACTION/INPUT/OBSERVATION/FINAL
 if multiple actions don't fill the FINAL yet until all actions are done
-                                          
+                                        
 Available tools:
 - search_sonic: Search SONiC documentation for relevant info.
 - execute_command: Run SONiC CLI commands if user asks you to execute them only via SSH. Input should be a valid SONiC CLI command.
 
-Follow this format:
+please return only the final answer                                   
 THOUGHT: your reasoning
 ACTION: the tool to use (if needed)
 INPUT: the input for the tool
 OBSERVATION: (this will be filled in later by the system, do NOT write this yourself)
-FINAL:  the final answer to the user                                     
-
+FINAL:  the final answer to the user
 This is your scratchpad of reasoning and user input so far: {input}
+here is the conversation history so far: {conv_history}
 """)
 
 chain = prompt | llm | StrOutputParser()
@@ -168,39 +171,108 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
     tool_map = {t.name: t.func for t in tools}
 
-    async def run_agent(user_input: str, max_steps: int = 5):
+    # async def run_agent(user_input: str, conv_history: str,max_steps: int = 5):
+    #     context = f"User asked: {user_input}"
+    #     # response = chain.invoke({"input": context, "conv_history": conv_history})
+    #     for step in range(max_steps):
+
+    #         response = chain.invoke({"input": context, "conv_history": conv_history})
+
+    #         print(f"\n=== Step {step+1} ===\n{response}\n")
+
+    #         if "FINAL:" in response and "ACTION:" not in response:
+    #                 return response.split("FINAL:", 1)[1].strip()
+
+    #         if "ACTION:" in response and "INPUT:" in response:
+    #             lines = response.splitlines()
+    #             action_line = next((line for line in lines if line.startswith("ACTION:")), None)
+    #             input_line = next((line for line in lines if line.startswith("INPUT:")), None)
+
+
+    #             tool_name = action_line.split(":", 1)[1].strip() if action_line else None
+    #             tool_input = input_line.split(":", 1)[1].strip() if input_line else None
+
+
+    #             if tool_name in tool_map:
+    #                 print(f"Invoking tool: {tool_name} with input: {tool_input}")
+
+    #                 result = await invoke_tool(tool_map[tool_name], tool_input)
+    #                 print("result", result)
+    #                 context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+    #             else:
+    #                 context += f"\nOBSERVATION: Unknown tool {tool_name}"
+        
+    #         else:
+    #             print("Agent stopped early")
+    #             return response.strip()
+    #         # response = chain.invoke({"input": context, "conv_history": ""})
+    #     return "Reached max steps without final answer."
+
+    async def run_agent(user_input: str, history: deque, max_steps: int = 5):
+
+        conv_history = "\n".join([
+            f"{msg['role'].capitalize()}: {msg['content']}"
+            for msg in list(history)
+        ])
+
         context = f"User asked: {user_input}"
 
         for step in range(max_steps):
-
-            response = chain.invoke({"input": context})
-
+            response = chain.invoke({"input": context, "conv_history": conv_history})
             print(f"\n=== Step {step+1} ===\n{response}\n")
 
-            if "FINAL:" in response and step > 1:
-                    return response.split("FINAL:", 1)[1].strip()
+            if "FINAL:" in response:
+                
+                final_answer = response.split("FINAL:", 1)[1].strip()
+                actions = re.findall(
+                    r"ACTION:\s*(\w+)\s*INPUT:\s*([\s\S]*?)(?=(?:ACTION:|FINAL:|$))",
+                    response
+                )
 
-            if "ACTION:" in response and "INPUT:" in response:
-                lines = response.splitlines()
-                action_line = next((line for line in lines if line.startswith("ACTION:")), None)
-                input_line = next((line for line in lines if line.startswith("INPUT:")), None)
-
-
-                tool_name = action_line.split(":", 1)[1].strip() if action_line else None
-                tool_input = input_line.split(":", 1)[1].strip() if input_line else None
-
-
-                if tool_name in tool_map:
-                    print(f"Invoking tool: {tool_name} with input: {tool_input}")
-
-                    result = await invoke_tool(tool_map[tool_name], tool_input)
-                    print("result", result)
-                    context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+                if actions:
+                    for i in actions:
+                        print("i:" , i)
+                    for tool_name, tool_input in actions:
+                        tool_name = tool_name.strip()
+                        tool_input = tool_input.strip()
+                        print("tool_name", tool_name)
+                        print("tool_input", tool_input)
+                        if tool_name in tool_map:
+                            print(f"Invoking tool: {tool_name} with input: {tool_input}")
+                            result = await invoke_tool(tool_map[tool_name], tool_input)
+                            print("result:" , result)
+                            context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+                        else:
+                            context += f"\nOBSERVATION: Unknown tool {tool_name}"
                 else:
-                    context += f"\nOBSERVATION: Unknown tool {tool_name}"
+                    print("⚠️ No ACTION/INPUT blocks found in response")
+
+                return final_answer
+
+            elif "ACTION:" in response and "INPUT:" in response:
+                # handle normal single action case
+                actions = re.findall(
+                    r"ACTION:\s*(\w+)\s*INPUT:\s*([\s\S]*?)(?=(?:ACTION:|FINAL:|$))",
+                    response
+                )
+
+                if actions:
+                    for tool_name, tool_input in actions:
+                        tool_name = tool_name.strip()
+                        tool_input = tool_input.strip()
+                        print("tool_name", tool_name)
+                        print("tool_input", tool_input)
+                        if tool_name in tool_map:
+                            print(f"Invoking tool: {tool_name} with input: {tool_input}")
+                            result = await invoke_tool(tool_map[tool_name], tool_input)
+                            print("result:" , result)
+                            context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+                        else:
+                            context += f"\nOBSERVATION: Unknown tool {tool_name}"
+                else:
+                    print("⚠️ No ACTION/INPUT blocks found in response")
         
             else:
-                print("Agent stopped early")
                 return response.strip()
 
         return "Reached max steps without final answer."
@@ -226,16 +298,16 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             clean_input = preprocess_input(user_input)
 
-            # conversation_history.append({"role": "user", "content": clean_input})
+            history.append({"role": "user", "content": clean_input})
 
             # conv_history = "\n".join(
             #     [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history])
             # response =  llm.invoke(final_prompt)
-            response = await run_agent(clean_input)
+            response = await run_agent(clean_input,history)
             # response = agent.invoke({"input": clean_input})
             # response = agent_executor.invoke({"input": clean_input})
-            # conversation_history.append({"role": "assistant", "content": response})
-            
+            history.append({"role": "assistant", "content": response})
+            # print("conv history\n", conversation_history)
             await websocket.send_text(response)
 
     except WebSocketDisconnect:
