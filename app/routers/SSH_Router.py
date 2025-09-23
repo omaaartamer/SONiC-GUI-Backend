@@ -1,11 +1,10 @@
-from fastapi import APIRouter, WebSocket, Depends
+from fastapi import APIRouter, WebSocket
 from app.services.SSH_Services import handle_ssh_session ,switch_status
-from app.core.Security import get_current_user
 
 router = APIRouter()
 
 @router.websocket("/cli/{username}")
-async def cli(websocket: WebSocket, username: str, user: dict = Depends(get_current_user)):
+async def cli(websocket: WebSocket, username: str):
     await handle_ssh_session(websocket, username)
 
 @router.websocket("/status/{username}")

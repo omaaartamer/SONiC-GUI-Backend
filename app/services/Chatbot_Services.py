@@ -10,7 +10,6 @@ from langchain.agents import Tool
 from app.services.SSH_Services import run_command, ssh_sessions
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-# from langchain.agents import initialize_agent, AgentExecutor
 from collections import deque
 
 history = deque(maxlen=5) 
@@ -269,19 +268,6 @@ async def chatbot_service(websocket: WebSocket, username: str):
                 return response.strip()
 
         return "Reached max steps without final answer."
-
-
-    # agent = initialize_agent(
-    #             tools,
-    #             llm,
-    #             agent="zero-shot-react-description",
-    #             verbose=True,
-    #             handle_parsing_errors=True,
-    #            agent_kwargs={
-    #             "prefix": agent_prompt
-    #     } 
-    # )
-    # conversation_history = []
 
     try:
         while True:

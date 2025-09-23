@@ -13,5 +13,5 @@ async def get_port_oper(request: Request, user: dict = Depends(get_current_user)
     return await get_po_service()
 
 @router.get("/status-summary", response_model=PortSummaryList)
-async def get_port_summary(user: dict = Depends(get_current_user)):
+async def get_port_summary():
     return await get_port_summary_service()

@@ -1,11 +1,8 @@
-from dotenv import load_dotenv
+import os
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-import os 
-# Load environment variables (if needed for other things)
-load_dotenv()
 
 # Define path where Chroma DB will be saved
 PERSIST_DIR = "app/db/chroma_db" #delete chroma_db file whenever the documentation.txt file changes so it can be automatically recreated
