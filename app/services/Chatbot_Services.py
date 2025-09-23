@@ -292,15 +292,9 @@ async def chatbot_service(websocket: WebSocket, username: str):
             clean_input = preprocess_input(user_input)
 
             history.append({"role": "user", "content": clean_input})
-
-            # conv_history = "\n".join(
-            #     [f"{msg['role'].capitalize()}: {msg['content']}" for msg in conversation_history])
-            # response =  llm.invoke(final_prompt)
             response = await run_agent(clean_input,history)
-            # response = agent.invoke({"input": clean_input})
-            # response = agent_executor.invoke({"input": clean_input})
             history.append({"role": "assistant", "content": response})
-            # print("conv history\n", conversation_history)
+            
             await websocket.send_text(response)
 
     except WebSocketDisconnect:

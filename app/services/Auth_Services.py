@@ -1,6 +1,6 @@
 import os
 import asyncssh
-from fastapi import HTTPException
+from fastapi import HTTPException, WebSocket, WebSocketDisconnect
 from app.models.User import UserCreate
 from app.db.tiny import users_table, User
 from app.core.Security import hash_password, create_access_token, verify_password
@@ -41,7 +41,7 @@ def signup(user: UserCreate):
 
 
 
-async def login(websocket):
+async def login(websocket: WebSocket):
     await websocket.accept()
     try:
         creds = await websocket.receive_json()
@@ -67,6 +67,11 @@ async def login(websocket):
             password=password
         )
 
+        if not conn:
+            await websocket.send_json({"No active SSH session"})
+            await websocket.close()
+            return
+
         ssh_sessions[username] = conn
 
         await websocket.send_json({
@@ -74,6 +79,8 @@ async def login(websocket):
             "token_type": "bearer",
             "message": "Login successful, SSH session ready"
         })
+    except WebSocketDisconnect:
+            print("Client disconnected, stopping...")
 
     except Exception as e:
         await websocket.send_json({"error": str(e)})

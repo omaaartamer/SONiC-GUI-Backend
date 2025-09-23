@@ -32,11 +32,3 @@ else:
     print("⚡ Loading existing Chroma DB...")
     db = Chroma(persist_directory=PERSIST_DIR, embedding_function=embeddings)
 
-# # Create Chroma database
-# db = Chroma.from_documents(texts, embeddings)
-
-# Perform a similarity search
-# query = "What is the command to show vlans?"
-# docs = db.similarity_search(query, k=2)
-
-# print("🔍 Result:", docs[0].page_content[:500])
