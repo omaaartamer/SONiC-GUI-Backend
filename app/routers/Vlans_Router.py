@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends
-from app.core.dependencies import get_current_user
+from app.core.Security import get_current_user
 from app.models.Vlan import Vlan_Post_Request, VlanWrapper, Vlan_Get_Response
 from app.services.Vlans_Services import fetch_vlans, post_vlans_service, patch_vlans_service, delete_all_vlans_from_switch, delete_vlan_by_name, delete_vlan_description_by_name, put_vlan_service
 from app.services.Port_Op_Services import sliding_window_rate_limiter

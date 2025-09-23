@@ -23,11 +23,7 @@ jobs:
 
       - name: Lint with ruff
         run: ruff check . --fix
-      # - name: Format code with black
-      #   run: black app/
-          
-      # - name: Lint with flake8
-      #   run: flake8 . --max-line-length=200
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
