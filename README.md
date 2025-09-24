@@ -27,10 +27,10 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - Redis cache for Vlans and Port Operations
 - Rate Limiting
 - Chatbot Feature
-    - ChromaDB stores embeddings for SONiC Documentation
+    - ChromaDB stores usies HuggingFace embeddings for SONiC Documentation
     - User query is sent to the backend
-    - Agent retrieves relevant context from ChromaDB using HuggingFace embeddings
     - Prompt Template instructs Gemini 2.5 Flash LLM on how to process the query
+    - Agent retrieves relevant context and invokes appropriate tools then adds result to the context
     - Parsed answer is returned to the frontend.
   
 ## Getting Started
