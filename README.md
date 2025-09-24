@@ -31,7 +31,7 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
     - User query is sent to the backend
     - Prompt Template instructs Gemini 2.5 Flash LLM on how to process the query
     - Agent retrieves relevant context and invokes appropriate tools then adds result to the context
-    - Parsed answer is returned to the frontend.
+    - Parsed answer is returned to user
   
 ## Getting Started
 
