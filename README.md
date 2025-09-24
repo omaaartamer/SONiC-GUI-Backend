@@ -27,7 +27,6 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - Redis cache for Vlans and Port Operations
 - Rate Limiting
 - Chatbot Feature
-   - Workflow:
     - ChromaDB stores embeddings for SONiC Documentation
     - User query is sent to the backend
     - Agent retrieves relevant context from ChromaDB using HuggingFace embeddings
