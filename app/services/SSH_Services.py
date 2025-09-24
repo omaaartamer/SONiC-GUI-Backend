@@ -1,5 +1,6 @@
 import re
 import asyncio
+import asyncssh
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
@@ -70,10 +71,31 @@ async def handle_ssh_session(websocket: WebSocket, username: str):
 async def run_command(conn, command: str):
     try:
         result = await conn.run(command)
-        return result.stdout.strip()
+        if result.stdout.strip():
+            return result.stdout.strip()
+        else:
+            result = result.stderr.strip()
+            if not result: # if empty then command succeeded 
+                return f"Command Executed Successfully : {command}"
+            else:
+                return result
     except Exception as e:
         raise RuntimeError(f"SSH command failed: {str(e)}")
 
+# async def test():
+#     try:
+#         async with asyncssh.connect(
+#             SSH_SWITCH_IP,
+#             username=SSH_USERNAME,
+#             password=SSH_PASSWORD
+#         ) as conn: 
+#             result = await run_command(conn, "config vlan add 2")
+#             print("result is", result)
+#     except Exception as e:
+#         raise RuntimeError(f"SSH command failed: {str(e)}") 
+
+# if __name__ == "__main__":
+#     asyncio.run(test())
 
 def parse_top_output(output: str):
 
@@ -219,11 +241,11 @@ async def switch_status(websocket: WebSocket, username: str):
             while True:
                 cpu_result = await run_command(conn, "top -b -n 1")
                 cpu_usage_percentage = parse_top_output(cpu_result)
-                print("inside switch status cpu = ", cpu_usage_percentage)
+                # print("inside switch status cpu = ", cpu_usage_percentage)
 
                 memory_result = await run_command(conn, "free -h")
                 mem_percentage = parse_free_output(memory_result)
-                print("inside switch status mem perc = ", mem_percentage)
+                # print("inside switch status mem perc = ", mem_percentage)
 
                 #  Fans
                 # fan_result = await run_command(conn, "show platform fan")

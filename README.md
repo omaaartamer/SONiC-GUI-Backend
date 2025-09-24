@@ -14,6 +14,8 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - AsyncSSH – For CLI feature that connects directly to SONiC switch
 - Redis – For caching (Ports, VLANs) and rate limiting
 - TinyDB – Lightweight JSON-based storage for user data
+- HuggingFace Embeddings + ChromaDB – For semantic search of SONiC documentation
+- Gemini 2.5 Flash LLM – To power the chatbot feature
 - GitHub Actions – CI/CD linting workflow
 
 ## Current Features
@@ -24,6 +26,12 @@ REST API that bridges the frontend GUI with SONiC switches via RESTCONF. Handles
 - Cli feature
 - Redis cache for Vlans and Port Operations
 - Rate Limiting
+- Chatbot Feature
+    - ChromaDB stores usies HuggingFace embeddings for SONiC Documentation
+    - User query is sent to the backend
+    - Prompt Template instructs Gemini 2.5 Flash LLM on how to process the query
+    - Agent retrieves relevant context and invokes appropriate tools then adds result to the context
+    - Parsed answer is returned to user
   
 ## Getting Started
 

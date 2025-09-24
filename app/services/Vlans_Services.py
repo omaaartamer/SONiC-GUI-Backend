@@ -103,7 +103,7 @@ async def validate_vlan_data(vlan_list:SonicVLAN, member_list: SonicVLANMember):
 def get_cached_vlans():
     cached_data = redis_client.get("vlans_data")
     if not cached_data:
-        # print("🔴 Cache MISS: No vlan_data found in Redis")
+        # print(" Cache MISS: No vlan_data found in Redis")
         return None
     
     parsed = json.loads(cached_data)
@@ -113,7 +113,7 @@ def get_cached_vlans():
 
 def set_cached_vlans(data: dict):
   redis_client.setex("vlans_data", 300, json.dumps(data))
-#   print("🟡 Cache UPDATED (SET):", json.dumps(data, indent=2))
+#   print(" Cache UPDATED (SET):", json.dumps(data, indent=2))
 
 async def fetch_vlans():
     try:
